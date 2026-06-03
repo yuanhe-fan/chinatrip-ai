@@ -33,17 +33,26 @@ export function readAnswerVisuals(metadata: unknown): AnswerVisuals | undefined 
   const inlineAssetIds = Array.isArray(visuals.inlineAssetIds)
     ? visuals.inlineAssetIds.filter((assetId): assetId is string => typeof assetId === "string")
     : undefined;
+  const embeddedAssetIds = Array.isArray(visuals.embeddedAssetIds)
+    ? visuals.embeddedAssetIds.filter((assetId): assetId is string => typeof assetId === "string")
+    : undefined;
   const cards = Array.isArray(visuals.cards)
     ? visuals.cards.filter(isVisualCard)
     : undefined;
 
-  if (!heroAssetId && !inlineAssetIds?.length && !cards?.length) {
+  if (
+    !heroAssetId &&
+    !inlineAssetIds?.length &&
+    !embeddedAssetIds?.length &&
+    !cards?.length
+  ) {
     return undefined;
   }
 
   return {
     heroAssetId,
     inlineAssetIds: inlineAssetIds?.length ? inlineAssetIds : undefined,
+    embeddedAssetIds: embeddedAssetIds?.length ? embeddedAssetIds : undefined,
     cards: cards?.length ? cards : undefined,
   };
 }

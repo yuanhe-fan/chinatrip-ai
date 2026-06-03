@@ -4,6 +4,7 @@ import type { QuickSubQuestion } from "@/lib/quick-questions/menus";
 export type AnswerVisuals = {
   heroAssetId?: string;
   inlineAssetIds?: string[];
+  embeddedAssetIds?: string[];
   cards?: Array<{
     type: "phrase" | "warning" | "backup" | "checklist";
     title: string;

@@ -2,10 +2,10 @@ import type { PromptProfile } from "./profiles";
 
 export type QuickQuestionId =
   | "payment"
+  | "itinerary_planning"
   | "internet_apps"
   | "transport"
   | "tickets_booking"
-  | "language"
   | "emergency";
 
 export type QuickQuestion = {
@@ -23,6 +23,13 @@ export const HOME_QUICK_QUESTIONS: QuickQuestion[] = [
     question: "What should I do if I cannot pay after arriving in China?",
     subtitle: "Alipay, WeChat Pay, cards, cash backup",
     promptProfile: "payment_survival",
+  },
+  {
+    id: "itinerary_planning",
+    label: "Itinerary Planning",
+    question: "Can you help me plan a simple one-day China itinerary?",
+    subtitle: "Beijing, Shanghai, Chengdu, Xi'an, custom plan",
+    promptProfile: "itinerary_planning",
   },
   {
     id: "internet_apps",
@@ -44,13 +51,6 @@ export const HOME_QUICK_QUESTIONS: QuickQuestion[] = [
     question: "Can I visit attractions directly, or do I need reservations and passport booking?",
     subtitle: "Reservations, passport, closed days",
     promptProfile: "tickets_booking",
-  },
-  {
-    id: "language",
-    label: "Language",
-    question: "What Chinese phrases or address cards should I show drivers, hotels, and shop staff?",
-    subtitle: "Show-to-local Chinese phrases",
-    promptProfile: "language_cards",
   },
   {
     id: "emergency",

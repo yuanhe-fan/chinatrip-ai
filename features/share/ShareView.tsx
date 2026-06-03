@@ -2,12 +2,17 @@
 
 import { ChatInput } from "@/components/ChatInput";
 import { AnswerContent } from "@/components/AnswerContent";
+import { ImagePreviewOverlay } from "@/components/ImagePreviewOverlay";
 import { ApiClientError, apiFetch } from "@/lib/api/client";
 import {
   CreateChatFromShareResponse,
   CreateChatResponse,
   SharedAnswerResponse,
 } from "@/lib/api/types";
+import {
+  getPoiAssetGroup,
+  type AnswerAsset,
+} from "@/lib/answer-assets/registry";
 import { formatChinaTripDate } from "@/lib/time/format";
 import { ArrowRight, Check, Copy, ExternalLink, Share2 } from "lucide-react";
 import Image from "next/image";
@@ -16,6 +21,11 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 type ShareSnapshot = SharedAnswerResponse["share"];
+
+type ImagePreviewState = {
+  assets: AnswerAsset[];
+  index: number;
+};
 
 export function ShareView({
   shareId,
@@ -36,6 +46,9 @@ export function ShareView({
     Boolean(shareId && !initialShare),
   );
   const [shareError, setShareError] = useState<string | null>(null);
+  const [previewState, setPreviewState] = useState<ImagePreviewState | null>(
+    null,
+  );
 
   const sharedQuestionText = share?.question ?? "Shared China travel question";
   const sharedAnswerText =
@@ -108,6 +121,43 @@ export function ShareView({
 
   function handleCopyLink() {
     void copyText(window.location.href, "Share link copied");
+  }
+
+  function handleOpenImagePreview(asset: AnswerAsset) {
+    const assets = getPoiAssetGroup(asset.id);
+    const index = Math.max(
+      0,
+      assets.findIndex((candidate) => candidate.id === asset.id),
+    );
+
+    setPreviewState({
+      assets: assets.length > 0 ? assets : [asset],
+      index,
+    });
+  }
+
+  function handlePreviewNext() {
+    setPreviewState((current) =>
+      current
+        ? {
+            ...current,
+            index: (current.index + 1) % current.assets.length,
+          }
+        : current,
+    );
+  }
+
+  function handlePreviewPrevious() {
+    setPreviewState((current) =>
+      current
+        ? {
+            ...current,
+            index:
+              (current.index - 1 + current.assets.length) %
+              current.assets.length,
+          }
+        : current,
+    );
   }
 
   async function handleSubmit() {
@@ -232,6 +282,7 @@ export function ShareView({
                   <AnswerContent
                     content={sharedAnswerText}
                     visuals={share?.visuals}
+                    onOpenImage={handleOpenImagePreview}
                   />
                 </div>
               </article>
@@ -286,6 +337,14 @@ export function ShareView({
           {toast}
         </div>
       ) : null}
+
+      <ImagePreviewOverlay
+        assets={previewState?.assets ?? []}
+        currentIndex={previewState?.index ?? 0}
+        onClose={() => setPreviewState(null)}
+        onNext={handlePreviewNext}
+        onPrevious={handlePreviewPrevious}
+      />
     </main>
   );
 }

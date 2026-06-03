@@ -3,8 +3,8 @@
 import {
   AlertTriangle,
   CarTaxiFront,
-  Languages,
   Landmark,
+  MapPinned,
   Smartphone,
   WalletCards,
 } from "lucide-react";
@@ -37,6 +37,10 @@ const questionStyles: Record<
     Icon: WalletCards,
     colorClass: "text-blue-300",
   },
+  itinerary_planning: {
+    Icon: MapPinned,
+    colorClass: "text-cyan-300",
+  },
   internet_apps: {
     Icon: Smartphone,
     colorClass: "text-purple-300",
@@ -48,10 +52,6 @@ const questionStyles: Record<
   tickets_booking: {
     Icon: Landmark,
     colorClass: "text-emerald-300",
-  },
-  language: {
-    Icon: Languages,
-    colorClass: "text-cyan-300",
   },
   emergency: {
     Icon: AlertTriangle,

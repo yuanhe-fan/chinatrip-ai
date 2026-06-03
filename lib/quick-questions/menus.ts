@@ -56,6 +56,45 @@ export const QUICK_QUESTION_MENUS: Record<QuickQuestionId, QuickQuestionMenu> = 
       },
     ],
   },
+  itinerary_planning: {
+    sourceQuestionId: "itinerary_planning",
+    promptProfile: "itinerary_planning",
+    title: "Choose a one-day itinerary to start",
+    intro:
+      "Pick a city or ask for a custom plan. I will build a practical route with timing, transport, booking risks, and backups.",
+    subQuestions: [
+      {
+        id: "beijing-one-day",
+        label: "Beijing 1 day",
+        question: "Plan a one-day Beijing itinerary for a first-time visitor.",
+        promptProfile: "itinerary_planning",
+      },
+      {
+        id: "shanghai-one-day",
+        label: "Shanghai 1 day",
+        question: "Plan a one-day Shanghai itinerary for a first-time visitor.",
+        promptProfile: "itinerary_planning",
+      },
+      {
+        id: "chengdu-one-day",
+        label: "Chengdu 1 day",
+        question: "Plan a one-day Chengdu itinerary for a first-time visitor.",
+        promptProfile: "itinerary_planning",
+      },
+      {
+        id: "xian-one-day",
+        label: "Xi'an 1 day",
+        question: "Plan a one-day Xi'an itinerary for a first-time visitor.",
+        promptProfile: "itinerary_planning",
+      },
+      {
+        id: "custom-itinerary",
+        label: "Custom plan",
+        question: "Help me create a custom China travel plan.",
+        promptProfile: "itinerary_planning",
+      },
+    ],
+  },
   internet_apps: {
     sourceQuestionId: "internet_apps",
     promptProfile: "internet_apps",
@@ -172,45 +211,6 @@ export const QUICK_QUESTION_MENUS: Record<QuickQuestionId, QuickQuestionMenu> = 
         question:
           "How early should I book attractions in Beijing, Shanghai, Xi'an, or Chengdu?",
         promptProfile: "tickets_booking",
-      },
-    ],
-  },
-  language: {
-    sourceQuestionId: "language",
-    promptProfile: "language_cards",
-    title: "Chinese text cards you can show locals",
-    intro:
-      "Choose the situation and I will create short copyable Chinese text you can show someone.",
-    subQuestions: [
-      {
-        id: "taxi-driver",
-        label: "Taxi driver",
-        question: "What should I show a taxi driver?",
-        promptProfile: "language_cards",
-      },
-      {
-        id: "hotel-checkin",
-        label: "Hotel check-in",
-        question: "What should I show hotel staff at check-in?",
-        promptProfile: "language_cards",
-      },
-      {
-        id: "ordering-food",
-        label: "Ordering food",
-        question: "What should I say when ordering food?",
-        promptProfile: "language_cards",
-      },
-      {
-        id: "ticket-counter",
-        label: "Ticket counter",
-        question: "What should I show at a ticket counter?",
-        promptProfile: "language_cards",
-      },
-      {
-        id: "emergency-phrases",
-        label: "Emergency phrases",
-        question: "What emergency Chinese phrases should I keep on my phone?",
-        promptProfile: "language_cards",
       },
     ],
   },

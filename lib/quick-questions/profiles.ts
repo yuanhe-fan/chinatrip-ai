@@ -70,7 +70,10 @@ export function classifyPromptProfile(question: string): PromptProfile {
   }
 
   if (
-    /\b(itinerary|plan my|route|schedule|day trip|3-day|three-day|hours in|pace|distance)\b/.test(
+    /\b(itinerary|plan my|travel plan|route|schedule|day trip|one-day|1-day|3-day|three-day|hours in|pace|distance)\b/.test(
+      normalized,
+    ) ||
+    /\b(beijing|shanghai|chengdu|xi'?an|xian)\b.*\b(one day|1 day|one-day|1-day|day itinerary)\b/.test(
       normalized,
     )
   ) {
@@ -87,4 +90,3 @@ export function classifyPromptProfile(question: string): PromptProfile {
 
   return "general_travel";
 }
-

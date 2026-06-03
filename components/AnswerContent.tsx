@@ -1,6 +1,14 @@
+"use client";
+
 import Image from "next/image";
+import { useMemo } from "react";
 import type { AnswerVisuals } from "@/lib/api/types";
-import { getAnswerAsset } from "@/lib/answer-assets/registry";
+import {
+  getAnswerAsset,
+  getPoiAssetGroup,
+  type AnswerAsset,
+} from "@/lib/answer-assets/registry";
+export type { AnswerAsset } from "@/lib/answer-assets/registry";
 
 type AnswerSection = {
   title: string | null;
@@ -30,6 +38,26 @@ type SectionTone = {
   numberRing: string;
   softBg: string;
   border: string;
+};
+
+type EmbeddedAssetMatch = {
+  asset: AnswerAsset;
+  assetId: string;
+};
+
+type EmbeddedAssetCandidate = {
+  asset: AnswerAsset;
+  assetId: string;
+  order: number;
+  index: number;
+  tagLength: number;
+  sourceRank: number;
+};
+
+type EmbeddedItemText = {
+  itemKey: string;
+  primaryText: string;
+  secondaryText?: string;
 };
 
 const SECTION_TONES: Record<string, SectionTone> = {
@@ -102,6 +130,232 @@ function cleanInlineText(value: string) {
     .trim();
 }
 
+function normalizeAssetMatchText(value: string) {
+  return cleanInlineText(value).toLowerCase();
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function findTagIndex(text: string, tag: string) {
+  if (!tag) {
+    return -1;
+  }
+
+  if (/^[a-z0-9\s'-]+$/.test(tag)) {
+    const pattern = new RegExp(
+      `(^|[^a-z0-9])${escapeRegExp(tag)}([^a-z0-9]|$)`,
+      "i",
+    );
+    const match = text.match(pattern);
+
+    if (!match || match.index === undefined) {
+      return -1;
+    }
+
+    return match.index + (match[1]?.length ?? 0);
+  }
+
+  return text.indexOf(tag);
+}
+
+function findEmbeddedAssetForText({
+  primaryText,
+  secondaryText = "",
+  embeddedAssets,
+}: {
+  primaryText: string;
+  secondaryText?: string;
+  embeddedAssets: EmbeddedAssetMatch[];
+}) {
+  const normalizedPrimaryText = normalizeAssetMatchText(primaryText);
+  const normalizedSecondaryText = normalizeAssetMatchText(secondaryText);
+  return embeddedAssets
+    .map(({ asset, assetId }, order) => {
+      const tagMatches = asset.tags
+        .flatMap((tag) => {
+          const normalizedTag = normalizeAssetMatchText(tag);
+          const primaryIndex = findTagIndex(normalizedPrimaryText, normalizedTag);
+          const secondaryIndex = findTagIndex(
+            normalizedSecondaryText,
+            normalizedTag,
+          );
+          const matches: Array<{
+            sourceRank: number;
+            index: number;
+            tagLength: number;
+          }> = [];
+
+          if (primaryIndex >= 0) {
+            matches.push({
+              sourceRank: 0,
+              index: primaryIndex,
+              tagLength: normalizedTag.length,
+            });
+          }
+
+          if (secondaryIndex >= 0) {
+            matches.push({
+              sourceRank: 1,
+              index: secondaryIndex,
+              tagLength: normalizedTag.length,
+            });
+          }
+
+          return matches;
+        })
+        .sort((left, right) => {
+          if (left.sourceRank !== right.sourceRank) {
+            return left.sourceRank - right.sourceRank;
+          }
+
+          if (left.tagLength !== right.tagLength) {
+            return right.tagLength - left.tagLength;
+          }
+
+          return left.index - right.index;
+        });
+
+      const bestTagMatch = tagMatches[0];
+
+      return bestTagMatch
+        ? {
+            asset,
+            assetId,
+            order,
+            ...bestTagMatch,
+          }
+        : null;
+    })
+    .filter(
+      (
+        item,
+      ): item is EmbeddedAssetCandidate => Boolean(item),
+    )
+    .sort((left, right) => {
+      if (left.sourceRank !== right.sourceRank) {
+        return left.sourceRank - right.sourceRank;
+      }
+
+      if (left.tagLength !== right.tagLength) {
+        return right.tagLength - left.tagLength;
+      }
+
+      if (left.index !== right.index) {
+        return left.index - right.index;
+      }
+
+      return left.order - right.order;
+    })[0];
+}
+
+function getEmbeddedItemTexts(sections: AnswerSection[]) {
+  const itemTexts: EmbeddedItemText[] = [];
+
+  sections.forEach((section, sectionIndex) => {
+    section.blocks.forEach((block, blockIndex) => {
+      if (block.type === "ordered" || block.type === "unordered") {
+        block.items.forEach((item, itemIndex) => {
+          const { title, body } = splitItemTitle(item);
+
+          itemTexts.push({
+            itemKey: createEmbeddedItemKey(sectionIndex, blockIndex, itemIndex),
+            primaryText: title ?? item,
+            secondaryText: title ? body : "",
+          });
+        });
+      }
+
+      if (block.type === "numberedGroup") {
+        block.items.forEach((item, itemIndex) => {
+          const { title, body } = splitItemTitle(item.title);
+
+          itemTexts.push({
+            itemKey: createEmbeddedItemKey(sectionIndex, blockIndex, itemIndex),
+            primaryText: title ?? item.title,
+            secondaryText: [title ? body : "", ...item.body].join(" "),
+          });
+        });
+      }
+    });
+  });
+
+  return itemTexts;
+}
+
+function createEmbeddedItemKey(
+  sectionIndex: number,
+  blockIndex: number,
+  itemIndex: number,
+) {
+  return `${sectionIndex}:${blockIndex}:${itemIndex}`;
+}
+
+function createEmbeddedAssetMap({
+  sections,
+  embeddedAssets,
+}: {
+  sections: AnswerSection[];
+  embeddedAssets: EmbeddedAssetMatch[];
+}) {
+  const usedAssetIds = new Set<string>();
+  const assetByItemKey = new Map<string, AnswerAsset>();
+
+  getEmbeddedItemTexts(sections).forEach((item) => {
+    const match = findEmbeddedAssetForText({
+      primaryText: item.primaryText,
+      secondaryText: item.secondaryText,
+      embeddedAssets: embeddedAssets.filter(
+        ({ assetId }) => !usedAssetIds.has(assetId),
+      ),
+    });
+
+    if (!match) {
+      return;
+    }
+
+    usedAssetIds.add(match.assetId);
+    assetByItemKey.set(item.itemKey, match.asset);
+  });
+
+  return assetByItemKey;
+}
+
+function getEmbeddedAssetForItem({
+  embeddedAssetByItemKey,
+  sectionIndex,
+  blockIndex,
+  itemIndex,
+}: {
+  embeddedAssetByItemKey: Map<string, AnswerAsset>;
+  sectionIndex: number;
+  blockIndex: number;
+  itemIndex: number;
+}) {
+  return (
+    embeddedAssetByItemKey.get(
+      createEmbeddedItemKey(sectionIndex, blockIndex, itemIndex),
+    ) ?? null
+  );
+}
+
+function splitItemTitle(item: string) {
+  const separatorMatch = item.match(/^([^:：\n-]{2,48})(?:[:：]| - )\s+(.+)$/);
+
+  if (!separatorMatch) {
+    return {
+      title: null,
+      body: item,
+    };
+  }
+
+  return {
+    title: separatorMatch[1].trim(),
+    body: separatorMatch[2].trim(),
+  };
+}
+
 function isTableLine(line: string) {
   return line.startsWith("|") && line.endsWith("|") && line.includes("|");
 }
@@ -132,6 +386,7 @@ function getSectionKey(title: string | null) {
   }
 
   if (
+    normalized.includes("do this") ||
     normalized.includes("step") ||
     normalized.includes("itinerary") ||
     normalized.includes("plan") ||
@@ -141,6 +396,7 @@ function getSectionKey(title: string | null) {
   }
 
   if (
+    normalized.includes("watch out") ||
     normalized.includes("watch") ||
     normalized.includes("warning") ||
     normalized.includes("note") ||
@@ -416,22 +672,6 @@ function renderTextWithOptionalCursor(text: string, shouldShowCursor: boolean) {
   );
 }
 
-function splitItemTitle(item: string) {
-  const separatorMatch = item.match(/^([^:：\n-]{2,48})(?:[:：]| - )\s+(.+)$/);
-
-  if (!separatorMatch) {
-    return {
-      title: null,
-      body: item,
-    };
-  }
-
-  return {
-    title: separatorMatch[1].trim(),
-    body: separatorMatch[2].trim(),
-  };
-}
-
 function NumberedItemContent({
   item,
   showCursor,
@@ -490,6 +730,61 @@ function AnswerAssetImage({
         {asset.title}
       </figcaption>
     </figure>
+  );
+}
+
+function EmbeddedAssetThumbnail({
+  asset,
+  onOpen,
+}: {
+  asset: AnswerAsset;
+  onOpen: (asset: AnswerAsset) => void;
+}) {
+  const assetGroup = getPoiAssetGroup(asset.id);
+  const imageCount = assetGroup.length;
+  const hasMultipleImages = imageCount > 1;
+
+  return (
+    <button
+      type="button"
+      onClick={() => onOpen(asset)}
+      className={`group relative mt-3 w-full text-left transition hover:-translate-y-0.5 sm:mt-0 sm:w-[9.5rem] sm:shrink-0 ${
+        hasMultipleImages ? "pr-2 pt-2" : ""
+      }`}
+      aria-label={`Open image: ${asset.title}`}
+    >
+      {hasMultipleImages ? (
+        <>
+          <span
+            className="absolute right-0 top-0 h-[calc(100%-0.45rem)] w-[calc(100%-0.45rem)] rounded-[0.85rem] border border-[#E6D8C7]/70 bg-[#F3EEE7] shadow-[0_8px_18px_rgba(20,36,58,0.08)]"
+            aria-hidden="true"
+          />
+          <span
+            className="absolute right-1 top-1 h-[calc(100%-0.45rem)] w-[calc(100%-0.45rem)] rounded-[0.85rem] border border-[#E6D8C7]/80 bg-[#FFF8EF] shadow-[0_8px_18px_rgba(20,36,58,0.08)]"
+            aria-hidden="true"
+          />
+        </>
+      ) : null}
+      <div className="relative overflow-hidden rounded-[0.85rem] border border-[#E6D8C7] bg-[#FFFDF9] shadow-[0_10px_22px_rgba(20,36,58,0.07)] transition group-hover:border-[#D49A52]/70 group-hover:shadow-[0_14px_28px_rgba(20,36,58,0.11)]">
+        {hasMultipleImages ? (
+          <span className="absolute right-2 top-2 z-10 rounded-full border border-white/80 bg-[#172033]/82 px-2 py-0.5 text-[0.68rem] font-extrabold leading-4 text-white shadow-[0_8px_16px_rgba(20,36,58,0.22)] backdrop-blur">
+            {imageCount}
+          </span>
+        ) : null}
+        <div className="relative aspect-[16/9] w-full sm:aspect-[4/3]">
+          <Image
+            src={asset.src}
+            alt={asset.alt}
+            fill
+            sizes="(min-width: 640px) 9.5rem, 100vw"
+            className="object-cover transition duration-200 group-hover:scale-[1.03]"
+          />
+        </div>
+        <div className="border-t border-[#E6D8C7]/70 px-2.5 py-1.5 text-[0.7rem] font-bold leading-4 text-[#756A60]">
+          {asset.title}
+        </div>
+      </div>
+    </button>
   );
 }
 
@@ -697,14 +992,22 @@ function AnswerTableView({
 
 function AnswerBlockView({
   block,
+  sectionIndex,
+  blockIndex,
   isLastBlock,
   showCursor,
   tone,
+  embeddedAssetByItemKey,
+  onOpenImage,
 }: {
   block: AnswerBlock;
+  sectionIndex: number;
+  blockIndex: number;
   isLastBlock: boolean;
   showCursor: boolean;
   tone: SectionTone;
+  embeddedAssetByItemKey: Map<string, AnswerAsset>;
+  onOpenImage: (asset: AnswerAsset) => void;
 }) {
   if (block.type === "subheading") {
     return (
@@ -737,6 +1040,12 @@ function AnswerBlockView({
       <ol className="space-y-4">
         {block.items.map((item, index) => {
           const isLastItem = index === block.items.length - 1;
+          const embeddedAsset = getEmbeddedAssetForItem({
+            embeddedAssetByItemKey,
+            sectionIndex,
+            blockIndex,
+            itemIndex: index,
+          });
 
           return (
             <li key={`${item}-${index}`} className="relative flex gap-3.5">
@@ -747,10 +1056,18 @@ function AnswerBlockView({
                 />
               ) : null}
               <NumberedBadge index={index} tone={tone} />
-              <NumberedItemContent
-                item={item}
-                showCursor={showCursor && isLastBlock && isLastItem}
-              />
+              <div className="min-w-0 flex-1 gap-4 sm:flex sm:items-start">
+                <NumberedItemContent
+                  item={item}
+                  showCursor={showCursor && isLastBlock && isLastItem}
+                />
+                {embeddedAsset ? (
+                  <EmbeddedAssetThumbnail
+                    asset={embeddedAsset}
+                    onOpen={onOpenImage}
+                  />
+                ) : null}
+              </div>
             </li>
           );
         })}
@@ -763,6 +1080,12 @@ function AnswerBlockView({
       <ol className="space-y-5">
         {block.items.map((item, index) => {
           const isLastItem = index === block.items.length - 1;
+          const embeddedAsset = getEmbeddedAssetForItem({
+            embeddedAssetByItemKey,
+            sectionIndex,
+            blockIndex,
+            itemIndex: index,
+          });
 
           return (
             <li key={`${item.title}-${index}`} className="relative flex gap-3.5">
@@ -773,10 +1096,18 @@ function AnswerBlockView({
                 />
               ) : null}
               <NumberedBadge index={index} tone={tone} />
-              <NumberedGroupItemContent
-                item={item}
-                showCursor={showCursor && isLastBlock && isLastItem}
-              />
+              <div className="min-w-0 flex-1 gap-4 sm:flex sm:items-start">
+                <NumberedGroupItemContent
+                  item={item}
+                  showCursor={showCursor && isLastBlock && isLastItem}
+                />
+                {embeddedAsset ? (
+                  <EmbeddedAssetThumbnail
+                    asset={embeddedAsset}
+                    onOpen={onOpenImage}
+                  />
+                ) : null}
+              </div>
             </li>
           );
         })}
@@ -820,13 +1151,34 @@ export function AnswerContent({
   content,
   visuals,
   showCursor = false,
+  onOpenImage,
 }: {
   content: string;
   visuals?: AnswerVisuals;
   showCursor?: boolean;
+  onOpenImage?: (asset: AnswerAsset) => void;
 }) {
-  const sections = parseAnswerContent(content);
+  const sections = useMemo(() => parseAnswerContent(content), [content]);
   const inlineAssetIds = visuals?.inlineAssetIds?.filter(Boolean) ?? [];
+  const embeddedAssets = useMemo(
+    () =>
+      (visuals?.embeddedAssetIds ?? [])
+        .map((assetId) => {
+          const asset = getAnswerAsset(assetId);
+
+          return asset ? { asset, assetId } : null;
+        })
+        .filter((item): item is EmbeddedAssetMatch => Boolean(item)),
+    [visuals?.embeddedAssetIds],
+  );
+  const embeddedAssetByItemKey = useMemo(
+    () =>
+      createEmbeddedAssetMap({
+        sections,
+        embeddedAssets,
+      }),
+    [sections, embeddedAssets],
+  );
 
   if (sections.length === 0 && !visuals) {
     return null;
@@ -887,11 +1239,15 @@ export function AnswerContent({
                 <AnswerBlockView
                   key={`${block.type}-${blockIndex}`}
                   block={block}
+                  sectionIndex={sectionIndex}
+                  blockIndex={blockIndex}
                   isLastBlock={
                     isLastSection && blockIndex === section.blocks.length - 1
                   }
                   showCursor={showCursor}
                   tone={tone}
+                  embeddedAssetByItemKey={embeddedAssetByItemKey}
+                  onOpenImage={onOpenImage ?? (() => undefined)}
                 />
               ))}
             </div>

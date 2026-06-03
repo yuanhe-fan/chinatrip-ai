@@ -28,6 +28,7 @@ const PROFILE_PROMPTS: Record<PromptProfile, string[]> = {
   itinerary_planning: [
     "Intent hint: itinerary_planning.",
     "Focus on distance, timing, pace, transport risk, booking risk, and backup routes.",
+    "For multi-day planning, structure each day as ### Day N: Short Theme, then 1. Morning, 2. Afternoon, 3. Evening. Restart numbering for every day.",
   ],
   food_ordering: [
     "Intent hint: food_ordering.",

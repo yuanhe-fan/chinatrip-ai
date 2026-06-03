@@ -14,7 +14,8 @@ import {
   type PromptProfile,
 } from "@/lib/quick-questions/profiles";
 
-export const TRAVEL_ANSWER_PROMPT_VERSION = "travel-answer-v8-profiled-visuals";
+export const TRAVEL_ANSWER_PROMPT_VERSION =
+  "travel-answer-v9-concise-focused";
 
 export function resolveTravelPromptProfile(input: {
   userMessage: string;

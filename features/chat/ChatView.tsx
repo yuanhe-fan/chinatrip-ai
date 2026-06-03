@@ -2,6 +2,7 @@
 
 import { ChatInput } from "@/components/ChatInput";
 import { AnswerContent } from "@/components/AnswerContent";
+import { ImagePreviewOverlay } from "@/components/ImagePreviewOverlay";
 import { LoginModal } from "@/components/LoginModal";
 import { UserProfileAvatar } from "@/components/UserProfileAvatar";
 import { ApiClientError, apiFetch } from "@/lib/api/client";
@@ -18,6 +19,10 @@ import {
   SendMessageResponse,
   StreamMessageEvent,
 } from "@/lib/api/types";
+import {
+  getPoiAssetGroup,
+  type AnswerAsset,
+} from "@/lib/answer-assets/registry";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   AlertTriangle,
@@ -81,6 +86,11 @@ type DetailLoadingReason = "initial" | "history" | null;
 type StreamBuffer = {
   targetChatId: string;
   text: string;
+};
+
+type ImagePreviewState = {
+  assets: AnswerAsset[];
+  index: number;
 };
 
 function toChatMessage(message: ChatDetailMessage): ChatMessage {
@@ -565,6 +575,7 @@ function AssistantMessageBubble({
   onShare,
   onContinueAnswer,
   onQuickSubQuestion,
+  onOpenImage,
   isSharing,
 }: {
   status?: ChatMessage["status"];
@@ -582,6 +593,7 @@ function AssistantMessageBubble({
     subQuestion: NonNullable<ChatMessage["quickQuestionMenu"]>["subQuestions"][number],
     menu: NonNullable<ChatMessage["quickQuestionMenu"]>,
   ) => void;
+  onOpenImage: (asset: AnswerAsset) => void;
   isSharing: boolean;
 }) {
   const isLoading = status === "loading";
@@ -633,7 +645,12 @@ function AssistantMessageBubble({
         <div className="relative z-10">
           {isStreaming ? (
             <div className="space-y-5">
-              <AnswerContent content={content} visuals={visuals} showCursor />
+              <AnswerContent
+                content={content}
+                visuals={visuals}
+                showCursor
+                onOpenImage={onOpenImage}
+              />
               <div className="inline-flex items-center gap-2 rounded-full border border-[#E6D8C7]/70 bg-[#FFF8EF]/76 px-3 py-1.5 text-xs font-semibold text-[#8A552B] shadow-[0_8px_18px_rgba(20,36,58,0.06)]">
                 <span className="flex items-center gap-1">
                   <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#D49A52] [animation-delay:-0.2s]" />
@@ -708,7 +725,11 @@ function AssistantMessageBubble({
             )
           ) : (
             <>
-              <AnswerContent content={content} visuals={visuals} />
+              <AnswerContent
+                content={content}
+                visuals={visuals}
+                onOpenImage={onOpenImage}
+              />
               {quickQuestionMenu ? (
                 <QuickQuestionMenuPanel
                   menu={quickQuestionMenu}
@@ -765,6 +786,7 @@ function MessageItem({
   onShare,
   onContinueAnswer,
   onQuickSubQuestion,
+  onOpenImage,
   sharingMessageId,
 }: {
   message: ChatMessage;
@@ -779,6 +801,7 @@ function MessageItem({
     subQuestion: NonNullable<ChatMessage["quickQuestionMenu"]>["subQuestions"][number],
     menu: NonNullable<ChatMessage["quickQuestionMenu"]>,
   ) => void;
+  onOpenImage: (asset: AnswerAsset) => void;
   sharingMessageId: string | null;
 }) {
   if (message.role === "user") {
@@ -799,6 +822,7 @@ function MessageItem({
       onShare={(event) => onShare(message, event)}
       onContinueAnswer={onContinueAnswer}
       onQuickSubQuestion={onQuickSubQuestion}
+      onOpenImage={onOpenImage}
       isSharing={sharingMessageId === message.id}
     />
   );
@@ -901,6 +925,9 @@ export function ChatView({ chatId }: { chatId: string }) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [message, setMessage] = useState("");
   const [sharingMessageId, setSharingMessageId] = useState<string | null>(null);
+  const [previewState, setPreviewState] = useState<ImagePreviewState | null>(
+    null,
+  );
   const [chatError, setChatError] = useState<string | null>(null);
   const [chatHistory, setChatHistory] = useState<ChatHistoryItem[]>([]);
   const [activeChatId, setActiveChatId] = useState(chatId);
@@ -937,6 +964,43 @@ export function ChatView({ chatId }: { chatId: string }) {
         behavior,
       });
     });
+  }
+
+  function handleOpenImagePreview(asset: AnswerAsset) {
+    const assets = getPoiAssetGroup(asset.id);
+    const index = Math.max(
+      0,
+      assets.findIndex((candidate) => candidate.id === asset.id),
+    );
+
+    setPreviewState({
+      assets: assets.length > 0 ? assets : [asset],
+      index,
+    });
+  }
+
+  function handlePreviewNext() {
+    setPreviewState((current) =>
+      current
+        ? {
+            ...current,
+            index: (current.index + 1) % current.assets.length,
+          }
+        : current,
+    );
+  }
+
+  function handlePreviewPrevious() {
+    setPreviewState((current) =>
+      current
+        ? {
+            ...current,
+            index:
+              (current.index - 1 + current.assets.length) %
+              current.assets.length,
+          }
+        : current,
+    );
   }
 
   function forceScrollToBottomAfterMessageInsert() {
@@ -2029,6 +2093,7 @@ export function ChatView({ chatId }: { chatId: string }) {
                         onShare={handleShare}
                         onContinueAnswer={handleContinueTruncatedAnswer}
                         onQuickSubQuestion={handleQuickSubQuestion}
+                        onOpenImage={handleOpenImagePreview}
                         sharingMessageId={sharingMessageId}
                       />
                     </div>
@@ -2065,6 +2130,15 @@ export function ChatView({ chatId }: { chatId: string }) {
               </p>
             </div>
           </div>
+
+          <ImagePreviewOverlay
+            assets={previewState?.assets ?? []}
+            currentIndex={previewState?.index ?? 0}
+            onClose={() => setPreviewState(null)}
+            onNext={handlePreviewNext}
+            onPrevious={handlePreviewPrevious}
+            scope="chat"
+          />
         </section>
       </div>
 

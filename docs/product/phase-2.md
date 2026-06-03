@@ -30,10 +30,10 @@ If the submitted text exactly matches a quick question, the app sends the matchi
 | Label | Question | Subtitle | Prompt Profile |
 | --- | --- | --- | --- |
 | Payment | What should I do if I cannot pay after arriving in China? | Alipay, WeChat Pay, cards, cash backup | `payment_survival` |
+| Itinerary Planning | Can you help me plan a simple one-day China itinerary? | Beijing, Shanghai, Chengdu, Xi'an, custom plan | `itinerary_planning` |
 | Internet & Apps | Which apps, SIM, eSIM, and VPN setup do I need before going to China? | Apps, mobile data, blocked services | `internet_apps` |
 | Transport | How do I use airports, metro, taxis, Didi, and high-speed trains in China? | Airport, metro, taxi, Didi, rail | `transport_workflow` |
 | Tickets & Booking | Can I visit attractions directly, or do I need reservations and passport booking? | Reservations, passport, closed days | `tickets_booking` |
-| Language | What Chinese phrases or address cards should I show drivers, hotels, and shop staff? | Show-to-local Chinese phrases | `language_cards` |
 | Emergency | What should I do if I lose my passport, phone, payment access, or need medical help in China? | Passport, phone, hospital, emergency phrases | `emergency_help` |
 
 Home page requirements:
@@ -42,7 +42,16 @@ Home page requirements:
 - Cards show label and subtitle.
 - The selected question appears in the existing input.
 - Chat creation behavior remains unchanged until the user submits the input.
-- Itinerary and food remain supported for free-form questions, but they are not home page entries in this phase.
+- `Language` is no longer a home page entry, but `language_cards` remains available for free-form communication questions.
+- Food remains supported for free-form questions, but it is not a home page entry in this phase.
+
+Itinerary menu questions:
+
+- `Plan a one-day Beijing itinerary for a first-time visitor.`
+- `Plan a one-day Shanghai itinerary for a first-time visitor.`
+- `Plan a one-day Chengdu itinerary for a first-time visitor.`
+- `Plan a one-day Xi'an itinerary for a first-time visitor.`
+- `Help me create a custom China travel plan.`
 
 ## Prompt Profiles
 
@@ -168,31 +177,47 @@ Directory structure:
 
 ```text
 public/answer-assets/
+  poi/
+    beijing/
+      tiananmen-square/
+      forbidden-city/
+      national-museum/
+      temple-of-heaven/
+      summer-palace/
+      bird-nest/
+      water-cube/
+      great-wall/
   payment/
   internet/
   transport/
   tickets/
   language/
   emergency/
-  cities/
 ```
 
 File naming rule:
 
 ```text
+poi/{city}/{poiSlug}/{poiSlug}-{n}.jpg
+poi/{city}/{poiSlug}/{poiSlug}-{n}.webp
+{category}-{subject}-{scenario}-{variant}.jpg
 {category}-{subject}-{scenario}-{variant}.webp
 ```
 
 Examples:
 
 ```text
+poi/beijing/tiananmen-square/tiananmen-square-1.jpg
+poi/beijing/tiananmen-square/tiananmen-square-2.jpg
+poi/beijing/forbidden-city/forbidden-city-1.jpg
+poi/beijing/forbidden-city/forbidden-city-2.jpg
+poi/beijing/bird-nest/bird-nest-1.jpg
 payment-alipay-qr-counter.webp
 internet-esim-setup-phone.webp
 transport-didi-pickup-point.webp
 tickets-forbidden-city-passport-booking.webp
 language-taxi-driver-card.webp
 emergency-passport-lost-police.webp
-city-beijing-day-route.webp
 ```
 
 Registry type:
@@ -206,7 +231,11 @@ type AnswerAsset = {
   category: PromptProfile | "city";
   city?: string;
   poi?: string;
+  poiSlug?: string;
+  role?: "cover" | "detail";
+  priority?: number;
   tags: string[];
+  aliases?: string[];
   sourceType: "owned" | "licensed" | "generated";
   credit?: string;
 };
@@ -214,10 +243,17 @@ type AnswerAsset = {
 
 Image matching rules:
 
-- `id` equals the file name without the extension.
+- `id` is stable and semantic, for example `poi:beijing:forbidden-city:1`.
+- The image file path can change, but `id` should not change.
 - AI must not return image URLs.
 - AI may return visual intent or tags.
 - Server-side code selects approved `assetId` values from the registry based on `promptProfile`, user question, tags, and answer context.
+- Itinerary images use POI-level matching instead of one city route image.
+- One POI can have multiple image assets.
+- For `itinerary_planning`, server-side code matches POI tags against the generated answer, sorts matched POIs by first appearance in the answer, and selects one best asset per POI.
+- The first implementation chooses `role: "cover"` with the lowest `priority`; if no cover exists, it falls back to the lowest-priority detail image.
+- Legacy aliases such as `beijing-forbidden-city` can temporarily map to new stable asset ids to avoid breaking older message metadata.
+- Only register image assets that actually exist under `public/answer-assets/`.
 - If no image matches, render a text-only answer.
 - Share pages render approved visual metadata when available. In the first implementation, shared answers may reselect visuals from the stored question and answer because `shared_answers` does not add a metadata column.
 
@@ -231,6 +267,7 @@ Visual metadata:
 type AnswerVisuals = {
   heroAssetId?: string;
   inlineAssetIds?: string[];
+  embeddedAssetIds?: string[];
   cards?: Array<{
     type: "phrase" | "warning" | "backup" | "checklist";
     title: string;
@@ -246,14 +283,15 @@ Profile-specific visual guidance:
 - `transport_workflow`: airport, Didi, metro, and high-speed rail step cards.
 - `tickets_booking`: reservation, passport-booking, and closed-day warning cards.
 - `language_cards`: copyable Chinese phrase cards.
-- `itinerary_planning`: city or attraction images from `cities/` and route summary card.
+- `itinerary_planning`: POI images from `poi/{city}/{poiSlug}/` that match mentioned attractions.
 - `food_ordering`: text and dietary phrase cards first; food images are deferred.
 - `emergency_help`: emergency warning card, help phrase card, and action checklist.
 
 Rendering requirements:
 
 - Mobile: stack images above text, single-column cards, no text overflow.
-- Desktop: support hero image, inline images, side-by-side image/text layouts, and 2-4 image grids.
+- Desktop: support hero image, inline images, embedded POI thumbnails inside itinerary steps, side-by-side image/text layouts, and 2-4 image grids.
+- Itinerary POI images should appear close to the matching route item when possible, with click-to-enlarge preview.
 - Copy action copies text only.
 - Share action preserves text and visual metadata.
 - Chat page and share page use the same answer rendering rules.
@@ -306,6 +344,9 @@ Phase 2 first implementation does not require a `shared_answers` migration. Shar
 - Upstash Redis caches `/api/chats` and `/api/share/:shareId`.
 - Redis failure does not break any user flow.
 - Static image registry and allowed directories exist, while missing assets degrade gracefully.
+- Itinerary Planning replaces Language in the home quick question list and appears immediately after Payment.
+- `language_cards` remains available for free-form communication questions.
+- Itinerary image matching uses POI-level assets, not one whole-city route image.
 - Chat page supports visual answers.
 - Share page supports visual answer rendering.
 
@@ -314,6 +355,7 @@ Phase 2 first implementation does not require a `shared_answers` migration. Shar
 Home:
 
 - Verify all six cards on desktop and mobile.
+- Confirm home order is Payment, Itinerary Planning, Internet & Apps, Transport, Tickets & Booking, Emergency.
 - Click each quick question and confirm it only fills the input.
 - Submit exact quick-question text and confirm profile metadata.
 - Edit quick-question text and confirm free-form classification.
@@ -336,6 +378,7 @@ Images:
 
 - Confirm every registry asset has `id`, `src`, `title`, `alt`, `category`, `tags`, and `sourceType`.
 - Confirm missing asset ids degrade gracefully.
+- Confirm itinerary answers match registered POI images by mentioned attraction names and preserve answer order.
 - Confirm image snapshots are stable on share pages.
 
 Answer UI:
