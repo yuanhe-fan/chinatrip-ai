@@ -25,6 +25,8 @@ import {
 } from "@/lib/quick-questions/questions";
 
 const CHAT_START_DELAY_MS = 350;
+const DEFAULT_HOME_QUESTION =
+  "Plan a one-day Beijing itinerary for a first-time visitor.";
 
 const questionStyles: Record<
   QuickQuestionId,
@@ -61,7 +63,7 @@ const questionStyles: Record<
 
 export function HomeView() {
   const router = useRouter();
-  const [question, setQuestion] = useState("");
+  const [question, setQuestion] = useState(DEFAULT_HOME_QUESTION);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);

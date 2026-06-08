@@ -701,38 +701,6 @@ function NumberedItemContent({
   );
 }
 
-function AnswerAssetImage({
-  assetId,
-  priority = false,
-}: {
-  assetId: string;
-  priority?: boolean;
-}) {
-  const asset = getAnswerAsset(assetId);
-
-  if (!asset) {
-    return null;
-  }
-
-  return (
-    <figure className="overflow-hidden rounded-[1rem] border border-[#E6D8C7] bg-[#FFFDF9] shadow-[0_14px_32px_rgba(20,36,58,0.08)]">
-      <div className="relative aspect-[16/9] w-full">
-        <Image
-          src={asset.src}
-          alt={asset.alt}
-          fill
-          sizes="(min-width: 768px) 44rem, 100vw"
-          priority={priority}
-          className="object-cover"
-        />
-      </div>
-      <figcaption className="border-t border-[#E6D8C7]/70 px-3 py-2 text-xs font-medium leading-5 text-[#756A60]">
-        {asset.title}
-      </figcaption>
-    </figure>
-  );
-}
-
 function EmbeddedAssetThumbnail({
   asset,
   onOpen,
@@ -1159,17 +1127,24 @@ export function AnswerContent({
   onOpenImage?: (asset: AnswerAsset) => void;
 }) {
   const sections = useMemo(() => parseAnswerContent(content), [content]);
-  const inlineAssetIds = visuals?.inlineAssetIds?.filter(Boolean) ?? [];
   const embeddedAssets = useMemo(
-    () =>
-      (visuals?.embeddedAssetIds ?? [])
+    () => {
+      const assetIds = [
+        visuals?.heroAssetId,
+        ...(visuals?.inlineAssetIds ?? []),
+        ...(visuals?.embeddedAssetIds ?? []),
+      ].filter((assetId): assetId is string => Boolean(assetId));
+      const uniqueAssetIds = Array.from(new Set(assetIds));
+
+      return uniqueAssetIds
         .map((assetId) => {
           const asset = getAnswerAsset(assetId);
 
           return asset ? { asset, assetId } : null;
         })
-        .filter((item): item is EmbeddedAssetMatch => Boolean(item)),
-    [visuals?.embeddedAssetIds],
+        .filter((item): item is EmbeddedAssetMatch => Boolean(item));
+    },
+    [visuals?.embeddedAssetIds, visuals?.heroAssetId, visuals?.inlineAssetIds],
   );
   const embeddedAssetByItemKey = useMemo(
     () =>
@@ -1186,19 +1161,7 @@ export function AnswerContent({
 
   return (
     <div className="space-y-7 text-[#26384D]">
-      {visuals?.heroAssetId ? (
-        <AnswerAssetImage assetId={visuals.heroAssetId} priority />
-      ) : null}
-
       {visuals?.cards?.length ? <VisualCards cards={visuals.cards} /> : null}
-
-      {inlineAssetIds.length > 0 ? (
-        <div className="grid gap-3 sm:grid-cols-2">
-          {inlineAssetIds.map((assetId) => (
-            <AnswerAssetImage key={assetId} assetId={assetId} />
-          ))}
-        </div>
-      ) : null}
 
       {sections.map((section, sectionIndex) => {
         const sectionKey = getSectionKey(section.title);
