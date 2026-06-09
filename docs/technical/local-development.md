@@ -5,7 +5,7 @@
 Current phase:
 
 ```text
-MVP release candidate stabilization
+Phase 3 RAG knowledge base planning and implementation
 ```
 
 Implemented core loop:
@@ -20,12 +20,17 @@ Home question
 → New user asks from share page
 ```
 
-Current Phase 1 defaults:
+Phase 3 adds:
 
-- AI answers default to English through the chat/request `language`.
-- Language switch UI is temporarily hidden; do not restore it unless the product plan changes.
-- Save answer remains out of scope.
-- Guest-to-user chat migration remains deferred.
+```text
+Knowledge seed files
+→ Ingestion script
+→ Doubao Embedding
+→ Supabase PostgreSQL + pgvector
+→ RAG retrieval
+→ DeepSeek answer generation
+→ Sources display
+```
 
 ## Requirements
 
@@ -33,9 +38,10 @@ Current Phase 1 defaults:
 Node.js 22+
 pnpm
 Docker
-PostgreSQL
+PostgreSQL with pgvector
 Supabase project with Google Auth enabled
-DeepSeek API key, or Doubao / Ark API key and endpoint id
+DeepSeek API key
+Doubao / Volcengine Ark Embedding API key
 ```
 
 ## Install
@@ -50,6 +56,7 @@ Create `.env.local` and provide the project values:
 
 ```env
 DATABASE_URL="postgresql://..."
+DIRECT_URL="postgresql://..."
 NEXT_PUBLIC_SITE_URL="http://localhost:3000"
 
 NEXT_PUBLIC_SUPABASE_URL="https://..."
@@ -57,24 +64,23 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY="..."
 SUPABASE_SERVICE_ROLE_KEY="..."
 
 AI_PROVIDER="deepseek"
-DEEPSEEK_API_KEY="..."
+DEEPSEEK_API_KEY=""
 DEEPSEEK_BASE_URL="https://api.deepseek.com"
 DEEPSEEK_MODEL="deepseek-chat"
 AI_TEMPERATURE="0.2"
 AI_MAX_OUTPUT_TOKENS="2000"
 
-# Doubao is still supported by switching AI_PROVIDER to "doubao".
-DOUBAO_API_KEY="..."
-DOUBAO_BASE_URL="https://ark.cn-beijing.volces.com/api/v3"
-DOUBAO_MODEL="ep-..."
+EMBEDDING_PROVIDER="doubao"
+EMBEDDING_BASE_URL="https://ark.cn-beijing.volces.com/api/v3"
+EMBEDDING_API_KEY=""
+EMBEDDING_MODEL="doubao-embedding-text-240515"
+EMBEDDING_DIMENSIONS="1536"
+
+UPSTASH_REDIS_REST_URL=""
+UPSTASH_REDIS_REST_TOKEN=""
 ```
 
-When `AI_PROVIDER="deepseek"` and these two optional values are not set, the
-server defaults to `AI_TEMPERATURE=0.2` and `AI_MAX_OUTPUT_TOKENS=2000` so
-reasoning-capable models have enough budget for the final visible answer.
-
-Production must set `NEXT_PUBLIC_SITE_URL` to the real HTTPS domain so metadata,
-canonical URLs, robots, sitemap, and share links do not use localhost.
+Production must set `NEXT_PUBLIC_SITE_URL` to the real HTTPS domain so metadata, canonical URLs, robots, sitemap, and share links do not use localhost.
 
 ## Auth Configuration
 
@@ -94,7 +100,24 @@ https://your-domain.com/auth/callback
 
 Google OAuth consent screen should use the public product name `ChinaTrip AI`.
 
-## Local PostgreSQL
+## Local PostgreSQL with pgvector
+
+Phase 3 local development should use a pgvector-enabled PostgreSQL image.
+
+Recommended Docker service:
+
+```yaml
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: chinatrip-ai-postgres
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: chinatrip
+      POSTGRES_PASSWORD: chinatrip
+      POSTGRES_DB: chinatrip_dev
+```
 
 Start PostgreSQL:
 
@@ -134,8 +157,166 @@ Run migrations:
 pnpm prisma:migrate
 ```
 
-Before production deploy, confirm the migration that converts key timestamp
-columns to `TIMESTAMPTZ(3)` has been applied to the production database.
+Phase 3 migration must enable pgvector:
+
+```sql
+CREATE EXTENSION IF NOT EXISTS vector;
+```
+
+Before production deploy, confirm all migrations have been applied to the Supabase database.
+
+## Knowledge Seed Files
+
+Knowledge seed files live under:
+
+```text
+ai/knowledge/seed/
+```
+
+First seed files:
+
+```text
+payment-survival.json
+internet-apps.json
+transport-workflow.json
+tickets-booking.json
+language-cards.json
+emergency-help.json
+```
+
+Seed files use this shape:
+
+```ts
+type KnowledgeSeedDocument = {
+  id: string;
+  title: string;
+  language: "en" | "zh";
+  category:
+    | "payment_survival"
+    | "internet_apps"
+    | "transport_workflow"
+    | "tickets_booking"
+    | "language_cards"
+    | "emergency_help"
+    | "general_travel";
+  sourceType: "internal_seed";
+  trustLevel: "product_curated";
+  updatedAt: string;
+  summary: string;
+  sections: Array<{
+    id: string;
+    heading: string;
+    tags: string[];
+    content: string;
+  }>;
+};
+```
+
+## Knowledge Ingestion
+
+Knowledge ingestion is script-based and does not use a public HTTP API.
+
+Script path:
+
+```text
+scripts/ingest-knowledge.mjs
+```
+
+Package scripts:
+
+```json
+{
+  "knowledge:ingest:dry-run": "node scripts/ingest-knowledge.mjs --dry-run",
+  "knowledge:ingest": "node scripts/ingest-knowledge.mjs"
+}
+```
+
+Dry-run:
+
+```bash
+pnpm knowledge:ingest:dry-run
+```
+
+Dry-run behavior:
+
+- Reads `ai/knowledge/seed/*.json`.
+- Validates seed structure with zod.
+- Creates planned section-level chunks.
+- Prints `documentsSeen`, `sectionsSeen`, `chunksPlanned`, `invalidFiles`, `categories`, and `estimatedEmbeddingCalls`.
+- Does not call Doubao Embedding.
+- Does not write to the database.
+
+Real import:
+
+```bash
+pnpm knowledge:ingest
+```
+
+Real import behavior:
+
+- Reads and validates seed files.
+- Creates one chunk per section by default.
+- Builds embedding input from title, category, summary, heading, tags, and content.
+- Generates `content_hash`.
+- Skips embedding when `content_hash` is unchanged.
+- Calls Doubao Embedding for new or changed chunks.
+- Upserts `knowledge_documents`.
+- Upserts `knowledge_chunks`.
+- Writes one `knowledge_ingestion_runs` row with success or failure state.
+
+Embedding input format:
+
+```text
+Title: {document.title}
+Category: {document.category}
+Summary: {document.summary}
+Heading: {section.heading}
+Tags: {section.tags.join(", ")}
+
+{section.content}
+```
+
+## RAG Local Verification Flow
+
+Use this sequence to validate RAG locally:
+
+```text
+Configure DATABASE_URL
+Configure DeepSeek env
+Configure Doubao Embedding env
+Start pgvector PostgreSQL
+Run Prisma migration
+Run knowledge dry-run
+Run knowledge ingest
+Start dev server
+Ask test questions and verify sources
+```
+
+Commands:
+
+```bash
+docker compose up -d
+pnpm prisma:migrate
+pnpm knowledge:ingest:dry-run
+pnpm knowledge:ingest
+pnpm dev
+```
+
+Test questions:
+
+```text
+What should I do if Alipay does not work after I arrive in China?
+How can I take a taxi or Didi if I cannot speak Chinese?
+Do foreign visitors need passport information to book attraction tickets in China?
+```
+
+Expected behavior:
+
+- Payment questions retrieve `payment_survival` chunks.
+- Transport questions retrieve `transport_workflow` chunks.
+- Ticket questions retrieve `tickets_booking` chunks.
+- Assistant messages include `sources` when retrieved knowledge was used.
+- If Doubao Embedding fails, the app still returns a normal DeepSeek answer without sources.
 
 ## Development Server
 
@@ -151,7 +332,7 @@ http://localhost:3000
 
 ## Verification
 
-Run before release candidate handoff:
+Run before release handoff:
 
 ```bash
 pnpm lint
@@ -160,8 +341,7 @@ pnpm exec prisma validate
 pnpm run build
 ```
 
-If `pnpm run build` fails in a sandbox with a Turbopack port binding error,
-rerun it in a normal local shell.
+If `pnpm run build` fails in a sandbox with a Turbopack port binding error, rerun it in a normal local shell.
 
 ## Common Issues
 
@@ -170,10 +350,13 @@ If Prisma cannot connect, check:
 - Docker container or Supabase database is reachable.
 - `.env.local` has the correct `DATABASE_URL`.
 - Prisma migrations have been applied.
+- Local Docker image supports pgvector.
 
-If Google login shows a Supabase project host instead of `ChinaTrip AI`, update
-the Google OAuth consent screen app name and authorized domains.
+If RAG returns no sources, check:
 
-If AI generation fails with `AI_QUOTA_EXHAUSTED`, the configured AI provider's
-usage limit has been reached; the UI should show the dedicated usage exhausted
-card.
+- `EMBEDDING_PROVIDER`, `EMBEDDING_BASE_URL`, `EMBEDDING_API_KEY`, `EMBEDDING_MODEL`, and `EMBEDDING_DIMENSIONS`.
+- `knowledge_documents` contains active documents.
+- `knowledge_chunks` contains embeddings.
+- The question maps to a prompt profile with matching knowledge category.
+
+If AI generation fails with `AI_QUOTA_EXHAUSTED`, the configured DeepSeek usage limit has been reached; the UI should show the dedicated usage exhausted card.

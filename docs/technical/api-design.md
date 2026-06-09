@@ -2,7 +2,7 @@
 
 ## Common Rules
 
-MVP APIs support the core product loop:
+APIs support the core product loop:
 
 ```text
 Home question
@@ -20,8 +20,9 @@ Rules:
 - API response fields use camelCase.
 - Database fields use snake_case and are mapped in the server layer.
 - Copy answer is client-side only through the Browser Clipboard API.
-- MVP does not expose Save answer APIs.
-- Share does not require login in Phase 1.
+- Share does not require login.
+- Phase 3 does not expose knowledge management HTTP APIs.
+- RAG retrieval is implemented through internal server services and existing chat API response extensions.
 
 ## Error Shape
 
@@ -30,11 +31,11 @@ All API errors use this shape:
 ```ts
 type ApiError = {
   error: {
-    code: string
-    message: string
-    details?: unknown
-  }
-}
+    code: string;
+    message: string;
+    details?: unknown;
+  };
+};
 ```
 
 Common error codes:
@@ -55,16 +56,7 @@ AI_QUOTA_EXHAUSTED
 INTERNAL_ERROR
 ```
 
-Example:
-
-```json
-{
-  "error": {
-    "code": "EMPTY_MESSAGE",
-    "message": "Please enter your question."
-  }
-}
-```
+RAG failures should not normally become public API errors. Embedding config issues, Doubao failures, pgvector query failures, and no-match results should degrade to a normal DeepSeek answer without sources.
 
 ## Identity Rules
 
@@ -87,21 +79,43 @@ Identity resolution:
 - If a Supabase session exists, get or create `profiles`.
 - If no Supabase session exists, get or create `anonymous_sessions`.
 - If no `anonymous_id` cookie exists, generate one and set it.
-- Phase 1 does not require guest-to-user migration, but APIs should preserve anonymous ownership fields so migration remains possible.
+- Guest-to-user migration is deferred, but APIs should preserve anonymous ownership fields so migration remains possible.
 
-Cookie recommendation:
+## Shared Types
 
-```text
-name: anonymous_id
-httpOnly: true
-sameSite: lax
-secure: true in production
-maxAge: 365 days
+### AnswerVisuals
+
+```ts
+type AnswerVisuals = {
+  heroAssetId?: string;
+  inlineAssetIds?: string[];
+  embeddedAssetIds?: string[];
+  cards?: Array<{
+    type: "phrase" | "warning" | "backup" | "checklist";
+    title: string;
+    body: string;
+  }>;
+};
 ```
+
+### AnswerSource
+
+Phase 3 adds source display for RAG-backed answers:
+
+```ts
+type AnswerSource = {
+  id: string;
+  title: string;
+  category: string;
+  updatedAt: string | null;
+};
+```
+
+Sources are derived from assistant message metadata. They are display metadata only; they do not expose raw chunk content or similarity scores.
 
 ## API Routes
 
-Phase 1 API surface:
+Current API surface:
 
 ```text
 POST /api/chats
@@ -119,6 +133,8 @@ POST /api/auth/logout
 
 `PATCH /api/chats/:chatId` is a designed endpoint for title/status updates and does not need to be implemented in the first API batch.
 
+Phase 3 does not add public endpoints such as `/api/knowledge-documents` or `/api/rag/search`.
+
 ## Chat APIs
 
 ### POST /api/chats
@@ -131,43 +147,38 @@ Request:
 
 ```ts
 type CreateChatRequest = {
-  message: string
-  language?: 'en' | 'zh'
-  source?: 'home' | 'share'
-  shareId?: string
-}
+  message: string;
+  language?: "en" | "zh";
+  source?: "home" | "share";
+  shareId?: string;
+  promptProfile?: PromptProfile;
+  sourceQuestionId?: string;
+};
 ```
-
-Parameters:
-
-- `message`: First user question. Required after trim.
-- `language`: UI/answer language. Defaults to `en`.
-- `source`: Optional analytics source. Use `home` or `share`.
-- `shareId`: Optional source share id when the user asks from a share page.
 
 Response:
 
 ```ts
 type CreateChatResponse = {
   chat: {
-    id: string
-    title: string
-    language: 'en' | 'zh'
-    status: 'active'
-    createdAt: string
-    updatedAt: string
-    lastMessageAt: string
-  }
+    id: string;
+    title: string;
+    language: "en" | "zh";
+    status: "active";
+    createdAt: string;
+    updatedAt: string;
+    lastMessageAt: string;
+  };
   firstMessage: {
-    id: string
-    chatId: string
-    role: 'user'
-    status: 'complete'
-    sequence: number
-    content: string
-    createdAt: string
-  }
-}
+    id: string;
+    chatId: string;
+    role: "user";
+    status: "complete";
+    sequence: number;
+    content: string;
+    createdAt: string;
+  };
+};
 ```
 
 Database behavior:
@@ -175,6 +186,7 @@ Database behavior:
 - Resolve `profiles` or `anonymous_sessions`.
 - Create `chats`.
 - Create first `messages` row with `role=user`, `status=complete`, `sequence=1`.
+- Store quick-question metadata when the request exactly matches a supported quick question.
 - Set `chats.last_message_at`.
 
 Errors:
@@ -191,31 +203,26 @@ Query:
 
 ```ts
 type ChatHistoryQuery = {
-  limit?: number
-  cursor?: string
-}
+  limit?: number;
+  cursor?: string;
+};
 ```
-
-Parameters:
-
-- `limit`: Defaults to `30`, maximum `50`.
-- `cursor`: Pagination cursor from the previous response.
 
 Response:
 
 ```ts
 type ChatHistoryResponse = {
   chats: Array<{
-    id: string
-    title: string
-    language: 'en' | 'zh'
-    status: 'active' | 'archived'
-    updatedAt: string
-    lastMessageAt: string
-    preview: string | null
-  }>
-  nextCursor: string | null
-}
+    id: string;
+    title: string;
+    language: "en" | "zh";
+    status: "active" | "archived";
+    updatedAt: string;
+    lastMessageAt: string;
+    preview: string | null;
+  }>;
+  nextCursor: string | null;
+};
 ```
 
 Rules:
@@ -237,34 +244,47 @@ Response:
 ```ts
 type ChatDetailResponse = {
   chat: {
-    id: string
-    title: string
-    language: 'en' | 'zh'
-    status: 'active' | 'archived'
-    createdAt: string
-    updatedAt: string
-    lastMessageAt: string
-  }
-  messages: Array<{
-    id: string
-    chatId: string
-    role: 'user' | 'assistant'
-    status: 'pending' | 'complete' | 'failed'
-    sequence: number
-    content: string
-    errorCode: string | null
-    errorMessage: string | null
-    createdAt: string
-    updatedAt: string
-  }>
-}
+    id: string;
+    title: string;
+    language: "en" | "zh";
+    status: "active" | "archived";
+    createdAt: string;
+    updatedAt: string;
+    lastMessageAt: string;
+  };
+  messages: ChatDetailMessage[];
+};
+
+type ChatDetailMessage = {
+  id: string;
+  chatId: string;
+  role: "user" | "assistant";
+  status: "pending" | "complete" | "failed";
+  sequence: number;
+  content: string;
+  errorCode: string | null;
+  errorMessage: string | null;
+  visuals?: AnswerVisuals;
+  sources?: AnswerSource[];
+  quickQuestionMenu?: {
+    sourceQuestionId: string;
+    promptProfile: PromptProfile;
+    subQuestions: QuickSubQuestion[];
+  };
+  truncated?: boolean;
+  maybeTruncated?: boolean;
+  finishReason?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
 ```
 
 Rules:
 
 - Only the owning profile or anonymous session can read the chat.
 - Messages are returned by `sequence asc`.
-- MVP does not return `system` messages to the client.
+- System messages are not returned to the client.
+- `sources` is present only when the assistant answer used retrieved knowledge.
 
 Errors:
 
@@ -274,15 +294,15 @@ Errors:
 
 ### PATCH /api/chats/:chatId
 
-Updates chat metadata. This is a designed endpoint for later MVP polish and is not required in the first API implementation batch.
+Updates chat metadata. This is a designed endpoint for later polish and may remain unimplemented.
 
 Request:
 
 ```ts
 type UpdateChatRequest = {
-  title?: string
-  status?: 'active' | 'archived' | 'deleted'
-}
+  title?: string;
+  status?: "active" | "archived" | "deleted";
+};
 ```
 
 Response:
@@ -290,24 +310,15 @@ Response:
 ```ts
 type UpdateChatResponse = {
   chat: {
-    id: string
-    title: string
-    status: 'active' | 'archived' | 'deleted'
-    updatedAt: string
-  }
-}
+    id: string;
+    title: string;
+    status: "active" | "archived" | "deleted";
+    updatedAt: string;
+  };
+};
 ```
 
-Rules:
-
-- Only the owning profile or anonymous session can update the chat.
-- `deleted` is a soft delete.
-
-Errors:
-
-- `CHAT_NOT_FOUND`
-- `FORBIDDEN`
-- `INTERNAL_ERROR`
+## Message APIs
 
 ### POST /api/chats/:chatId/messages
 
@@ -319,8 +330,11 @@ Request:
 
 ```ts
 type SendMessageRequest = {
-  message: string
-}
+  message?: string;
+  promptProfile?: PromptProfile;
+  sourceQuestionId?: string;
+  sourceSubQuestionId?: string;
+};
 ```
 
 Response:
@@ -328,76 +342,87 @@ Response:
 ```ts
 type SendMessageResponse = {
   userMessage: {
-    id: string
-    chatId: string
-    role: 'user'
-    status: 'complete'
-    sequence: number
-    content: string
-    createdAt: string
-  }
+    id: string;
+    chatId: string;
+    role: "user";
+    status: "complete";
+    sequence: number;
+    content: string;
+    createdAt: string;
+    updatedAt: string;
+  };
   assistantMessage: {
-    id: string
-    chatId: string
-    role: 'assistant'
-    status: 'complete' | 'failed'
-    sequence: number
-    content: string
-    errorCode: string | null
-    errorMessage: string | null
-    createdAt: string
-    updatedAt: string
-  }
+    id: string;
+    chatId: string;
+    role: "assistant";
+    status: "complete" | "failed";
+    sequence: number;
+    content: string;
+    errorCode: string | null;
+    errorMessage: string | null;
+    visuals?: AnswerVisuals;
+    sources?: AnswerSource[];
+    quickQuestionMenu?: ChatDetailMessage["quickQuestionMenu"];
+    truncated?: boolean;
+    maybeTruncated?: boolean;
+    finishReason?: string | null;
+    createdAt: string;
+    updatedAt: string;
+  };
   usage: {
-    provider: 'mock' | 'doubao' | 'deepseek'
-    model: string
-    promptVersion: string
-    inputTokens: number | null
-    outputTokens: number | null
-    latencyMs: number | null
-    fallbackUsed: boolean
-  }
-}
+    provider: "mock" | "doubao" | "deepseek";
+    model: string;
+    promptVersion: string;
+    inputTokens: number | null;
+    outputTokens: number | null;
+    latencyMs: number | null;
+    fallbackUsed: boolean;
+  };
+};
 ```
 
 Database behavior:
 
 - Validate chat ownership.
-- Create a user message with the next sequence number.
+- Create a user message with the next sequence number when `message` is present.
 - Create an assistant message with `status=pending`.
-- Call AI Provider Service.
+- Resolve prompt profile.
+- Run RAG retrieval unless the request uses fast path.
+- Call DeepSeek through the AI Provider Service.
 - Update assistant message to `complete` or `failed`.
+- Store `visuals`, `retrieval`, and `sources` in assistant metadata when available.
 - Create an `ai_usage_logs` row.
-- Update `chats.updated_at` and `chats.last_message_at`.
+- Update `chats.last_message_at`.
 
 Failure behavior:
 
 - AI failures should still create/update an assistant message with `status=failed`.
 - AI failures should still write `ai_usage_logs.success=false` when possible.
-- Client can show the assistant `errorMessage`.
+- RAG failures should degrade to a normal DeepSeek answer without sources.
 
 Errors:
 
 - `EMPTY_MESSAGE`
 - `CHAT_NOT_FOUND`
 - `MESSAGE_GENERATION_IN_PROGRESS`
+- `AI_QUOTA_EXHAUSTED`
+- `INTERNAL_ERROR`
 
 ### POST /api/chats/:chatId/messages/stream
 
-Streams an assistant answer for a follow-up message or for the first unanswered
-user message after `POST /api/chats`.
+Streams an assistant answer for a follow-up message or for the first unanswered user message after `POST /api/chats`.
 
-This endpoint is preferred by the Chat UI because it returns immediately as
-`text/event-stream` and sends answer deltas while the model is still generating.
-`POST /api/chats/:chatId/messages` remains available as the non-streaming
-fallback.
+This endpoint is preferred by the Chat UI because it returns immediately as `text/event-stream` and sends answer deltas while the model is generating.
 
 Request:
 
 ```ts
 type SendMessageRequest = {
-  message?: string
-}
+  message?: string;
+  promptProfile?: PromptProfile;
+  sourceQuestionId?: string;
+  sourceSubQuestionId?: string;
+};
 ```
 
 Events:
@@ -405,57 +430,49 @@ Events:
 ```ts
 type StreamMessageEvent =
   | {
-      type: 'created'
-      userMessage: SendMessageResponse['userMessage']
+      type: "created";
+      userMessage: SendMessageResponse["userMessage"];
       assistantMessage: {
-        id: string
-        chatId: string
-        role: 'assistant'
-        status: 'pending'
-        sequence: number
-        content: ''
-        errorCode: null
-        errorMessage: null
-        createdAt: string
-        updatedAt: string
-      }
+        id: string;
+        chatId: string;
+        role: "assistant";
+        status: "pending";
+        sequence: number;
+        content: "";
+        errorCode: null;
+        errorMessage: null;
+        createdAt: string;
+        updatedAt: string;
+      };
     }
   | {
-      type: 'delta'
-      content: string
+      type: "delta";
+      content: string;
     }
   | {
-      type: 'done'
-      assistantMessage: SendMessageResponse['assistantMessage']
-      usage: SendMessageResponse['usage']
+      type: "done";
+      assistantMessage: SendMessageResponse["assistantMessage"];
+      usage: SendMessageResponse["usage"];
     }
   | {
-      type: 'error'
-      assistantMessage?: SendMessageResponse['assistantMessage']
+      type: "error";
+      assistantMessage?: SendMessageResponse["assistantMessage"];
       error: {
-        code: string
-        message: string
-      }
-    }
+        code: string;
+        message: string;
+      };
+    };
 ```
+
+Because `SendMessageResponse["assistantMessage"]` includes `sources`, the `done` event automatically supports RAG sources.
 
 Database behavior:
 
 - Create the user message and `pending` assistant message before streaming.
 - Stream deltas to the client without writing every delta to the database.
-- On completion, update the assistant message to `complete` with the full answer.
+- On completion, update the assistant message to `complete` with the full answer and metadata.
 - On failure or interruption, update the assistant message to `failed`.
 - Create an `ai_usage_logs` row when possible.
-
-Errors before stream starts:
-
-- `EMPTY_MESSAGE`
-- `CHAT_NOT_FOUND`
-- `MESSAGE_GENERATION_IN_PROGRESS`
-- `FORBIDDEN`
-- `AI_GENERATION_FAILED`
-- `AI_QUOTA_EXHAUSTED`
-- `INTERNAL_ERROR`
 
 ## Share APIs
 
@@ -463,114 +480,86 @@ Errors before stream starts:
 
 Creates or reuses a public share record for one question-answer pair.
 
-Share does not require login in Phase 1.
-
 Request:
 
 ```ts
 type CreateSharedAnswerRequest = {
-  chatId: string
-  userMessageId: string
-  assistantMessageId: string
-}
+  chatId: string;
+  userMessageId: string;
+  assistantMessageId: string;
+};
 ```
-
-Parameters:
-
-- `chatId`: Chat containing the pair.
-- `userMessageId`: User question message.
-- `assistantMessageId`: Complete assistant answer message.
 
 Response:
 
 ```ts
 type CreateSharedAnswerResponse = {
   share: {
-    id: string
-    shareId: string
-    url: string
-    question: string
-    answer: string
-    createdAt: string
-  }
-}
+    id: string;
+    shareId: string;
+    url: string;
+    question: string;
+    answer: string;
+    visuals?: AnswerVisuals;
+    sources?: AnswerSource[];
+    createdAt: string;
+  };
+};
 ```
-
-Database behavior:
-
-- Validate chat ownership.
-- Validate `userMessageId` belongs to the chat and has `role=user`.
-- Validate `assistantMessageId` belongs to the chat, has `role=assistant`, and has `status=complete`.
-- Validate the two messages form a valid question-answer pair.
-- Reuse an existing public share for the same assistant message when possible.
-- Otherwise create `shared_answers` with question and answer snapshots.
 
 Rules:
 
-- `shareId` maps to database `share_slug`.
-- The share page reads snapshots from `shared_answers`.
-- Full chat history is never exposed by this endpoint.
-
-Errors:
-
-- `CHAT_NOT_FOUND`
-- `MESSAGE_NOT_FOUND`
-- `PAIR_NOT_FOUND`
-- `FORBIDDEN`
-- `INTERNAL_ERROR`
+- Validate chat ownership.
+- Validate that the two messages form a valid question-answer pair.
+- Reuse an existing public share for the same assistant message when possible.
+- Otherwise create `shared_answers` with question and answer snapshots.
+- `sources` may be read from the assistant message metadata.
 
 ### GET /api/share/:shareId
 
 Returns a public shared question-answer snapshot.
-
-This endpoint does not require login.
 
 Response:
 
 ```ts
 type SharedAnswerResponse = {
   share: {
-    id: string
-    shareId: string
-    question: string
-    answer: string
-    createdAt: string
-    viewCount: number
-  }
-}
+    id: string;
+    shareId: string;
+    question: string;
+    answer: string;
+    visuals?: AnswerVisuals;
+    sources?: AnswerSource[];
+    createdAt: string;
+    viewCount: number;
+  };
+};
 ```
 
 Rules:
 
 - Return only shares where `is_public=true` and `revoked_at=null`.
 - Do not return `chatId`, message ids, `profileId`, or `anonymousSessionId`.
+- `sources` may be rebuilt from the original assistant message metadata or safely omitted if unavailable.
 - Increment `view_count` synchronously or asynchronously.
-
-Errors:
-
-- `SHARE_NOT_FOUND`
-- `SHARE_NOT_PUBLIC`
-- `INTERNAL_ERROR`
 
 ### POST /api/share/:shareId/chats
 
 Creates a new chat from the share page question input.
 
-This endpoint is semantically equivalent to `POST /api/chats`, but preserves share conversion context.
-
 Request:
 
 ```ts
 type CreateChatFromShareRequest = {
-  message: string
-  language?: 'en' | 'zh'
-}
+  message: string;
+  language?: "en" | "zh";
+};
 ```
 
 Response:
 
 ```ts
-type CreateChatFromShareResponse = CreateChatResponse
+type CreateChatFromShareResponse = CreateChatResponse;
 ```
 
 Rules:
@@ -579,13 +568,6 @@ Rules:
 - Treat source as `share`.
 - Attach `shareId` to analytics metadata when available.
 - Client navigates to `/chat/:chatId` after success.
-
-Errors:
-
-- `EMPTY_MESSAGE`
-- `INVALID_LANGUAGE`
-- `SHARE_NOT_FOUND`
-- `INTERNAL_ERROR`
 
 ## Profile and Auth APIs
 
@@ -598,27 +580,17 @@ Response:
 ```ts
 type MeResponse = {
   user: {
-    id: string
-    email: string | null
-    name: string | null
-    avatarUrl: string | null
-    locale: 'en' | 'zh'
-  } | null
+    id: string;
+    email: string | null;
+    name: string | null;
+    avatarUrl: string | null;
+    locale: "en" | "zh";
+  } | null;
   anonymous: {
-    id: string
-  }
-}
+    id: string;
+  };
+};
 ```
-
-Rules:
-
-- Always ensure an anonymous cookie exists.
-- `user` is `null` when the visitor is logged out.
-- Logged-in users still keep the anonymous id for future migration support.
-
-Errors:
-
-- `INTERNAL_ERROR`
 
 ### POST /api/auth/logout
 
@@ -628,132 +600,239 @@ Response:
 
 ```ts
 type LogoutResponse = {
-  status: 'ok'
-}
+  status: "ok";
+};
 ```
 
-Rules:
+## Internal RAG Interfaces
 
-- Clear the Supabase session.
-- Do not delete the `anonymous_id` cookie.
+Phase 3 uses internal services, not public HTTP APIs, for knowledge ingestion and retrieval.
 
-Errors:
-
-- `INTERNAL_ERROR`
-
-## AI Internal Service Contract
-
-There is no public `/api/ai` endpoint in MVP. AI generation is called internally by `POST /api/chats/:chatId/messages` and `POST /api/chats/:chatId/messages/stream`.
-
-Input:
+### Embedding
 
 ```ts
-type GenerateAnswerInput = {
-  chatId: string
-  language: 'en' | 'zh'
-  messages: Array<{
-    role: 'user' | 'assistant' | 'system'
-    content: string
-  }>
-}
+type EmbeddingResult = {
+  embedding: number[];
+  model: string;
+  dimensions: number;
+};
+
+async function embedText(input: {
+  text: string;
+  signal?: AbortSignal;
+}): Promise<EmbeddingResult>;
 ```
 
-Output:
+### Retrieval
 
 ```ts
-type GenerateAnswerResult = {
-  content: string
-  provider: 'mock' | 'doubao' | 'deepseek'
-  model: string
-  promptVersion: string
-  inputTokens: number | null
-  outputTokens: number | null
-  costEstimate: string | null
-  latencyMs: number
-  fallbackUsed: boolean
-  metadata?: Record<string, unknown>
-}
+type KnowledgeSource = AnswerSource;
+
+type RetrievalMatch = {
+  chunkId: string;
+  documentId: string;
+  title: string;
+  heading: string | null;
+  category: string;
+  content: string;
+  score: number;
+  updatedAt: string | null;
+};
+
+type RetrievalResult = {
+  enabled: boolean;
+  matches: RetrievalMatch[];
+  sources: KnowledgeSource[];
+  failedReason?: string;
+};
+
+async function retrieveTravelKnowledge(input: {
+  query: string;
+  language: "en" | "zh";
+  promptProfile: PromptProfile;
+  limit?: number;
+  signal?: AbortSignal;
+}): Promise<RetrievalResult>;
 ```
 
-Streaming output:
+Retrieval rules:
+
+- Each user question calls Doubao Embedding at most once.
+- Default `limit` is `5`.
+- Prefer the current `promptProfile`.
+- Allow `general_travel` as supplementary context.
+- Use English knowledge by default.
+- Do not inject Knowledge Context when there are no matches.
+- Degrade to normal DeepSeek answer if embedding config is missing, Doubao fails, or pgvector query fails.
+
+### Knowledge Context
 
 ```ts
-type StreamAnswerChunk =
-  | {
-      type: 'delta'
-      content: string
-    }
-  | {
-      type: 'done'
-      result: GenerateAnswerResult
-    }
+function buildKnowledgeContext(retrieval: RetrievalResult): string | null;
 ```
 
-Rules:
-
-- Local development may use `provider=mock`.
-- Doubao is the target primary provider for the release candidate.
-- DeepSeek is the planned fallback provider.
-- Default generation should prefer concise answers.
-- Chat UI should prefer `POST /api/chats/:chatId/messages/stream`; the non-streaming endpoint remains available as a fallback.
-- Default provider parameters:
-  - `temperature=0.3`
-  - `max_tokens=600`
-- `AI_TEMPERATURE` and `AI_MAX_OUTPUT_TOKENS` may override these defaults.
-- Chat history sent to the provider should be trimmed to the most recent relevant messages.
-- Every generation attempt should create an `ai_usage_logs` row when possible.
-- Provider quota or billing exhaustion must be normalized to `AI_QUOTA_EXHAUSTED` and stored on the failed assistant message.
-
-## Endpoint Priority
-
-Implementation order:
+Knowledge Context format:
 
 ```text
-1. POST /api/chats
-2. GET /api/chats/:chatId
-3. POST /api/chats/:chatId/messages
-4. POST /api/chats/:chatId/messages/stream
-5. GET /api/chats
-6. POST /api/shared-answers
-7. GET /api/share/:shareId
-8. POST /api/share/:shareId/chats
-9. GET /api/me
-10. PATCH /api/chats/:chatId
-11. POST /api/auth/logout
+Knowledge base context:
+Use this context when relevant to the traveler's question.
+Do not invent official policies, prices, opening hours, or links if they are not provided here.
+If the context is missing or not relevant, answer from general travel knowledge and remind the traveler to verify time-sensitive details.
+
+[Source 1]
+Title: {title}
+Updated: {updatedAt}
+Category: {category}
+Content:
+{content}
 ```
 
-## Test Plan
+## Knowledge Ingestion Script
 
-Home flow:
+Knowledge ingestion is script-based.
 
-- Empty message returns `EMPTY_MESSAGE`.
-- Valid message creates a chat and first user message.
-- Missing anonymous cookie is created.
+Script path:
 
-Chat flow:
+```text
+scripts/ingest-knowledge.mjs
+```
 
-- Current owner can fetch chat detail.
-- Another anonymous session cannot fetch the chat.
-- Follow-up creates a user message, assistant message, and usage log.
-- AI failure writes a failed assistant message and usage log when possible.
+Package scripts:
 
-History flow:
+```json
+{
+  "knowledge:ingest:dry-run": "node scripts/ingest-knowledge.mjs --dry-run",
+  "knowledge:ingest": "node scripts/ingest-knowledge.mjs"
+}
+```
 
-- `GET /api/chats` returns only current identity chats.
-- Pagination works with `limit` and `cursor`.
+Seed directory:
 
-Share flow:
+```text
+ai/knowledge/seed/
+```
 
-- Anonymous user can share a complete assistant answer.
-- Sharing the same answer twice reuses the existing public share.
-- Public share fetch returns only the question-answer snapshot.
-- Private or revoked shares are not publicly readable.
+First seed files:
 
-Copy flow:
+```text
+payment-survival.json
+internet-apps.json
+transport-workflow.json
+tickets-booking.json
+language-cards.json
+emergency-help.json
+```
 
-- No backend endpoint exists for Copy.
-- Copy uses the Browser Clipboard API.
+Seed type:
 
-Save flow:
+```ts
+type KnowledgeSeedDocument = {
+  id: string;
+  title: string;
+  language: "en" | "zh";
+  category:
+    | "payment_survival"
+    | "internet_apps"
+    | "transport_workflow"
+    | "tickets_booking"
+    | "language_cards"
+    | "emergency_help"
+    | "general_travel";
+  sourceType: "internal_seed";
+  trustLevel: "product_curated";
+  updatedAt: string;
+  summary: string;
+  sections: Array<{
+    id: string;
+    heading: string;
+    tags: string[];
+    content: string;
+  }>;
+};
+```
 
-- No `POST /api/saved-answers` endpoint exists in MVP.
+Seed demo:
+
+```json
+{
+  "id": "payment-survival-basics-en",
+  "title": "Payment Survival Basics for Foreign Travelers in China",
+  "language": "en",
+  "category": "payment_survival",
+  "sourceType": "internal_seed",
+  "trustLevel": "product_curated",
+  "updatedAt": "2026-06-01",
+  "summary": "Practical payment setup and backup advice for foreign travelers arriving in China.",
+  "sections": [
+    {
+      "id": "before-arrival-setup",
+      "heading": "Before arrival setup",
+      "tags": ["alipay", "wechat pay", "foreign card", "setup"],
+      "content": "Foreign travelers should set up at least one mobile payment app before arriving in China. Alipay and WeChat Pay are the most useful daily payment tools. Add an international bank card if supported, complete identity verification when requested, and keep a backup card and a small amount of cash."
+    }
+  ]
+}
+```
+
+Ingestion flow:
+
+```text
+Read ai/knowledge/seed/*.json
+→ Validate with zod
+→ Create section-level chunks
+→ Build embedding input
+→ Generate content_hash
+→ Dry-run prints stats and exits
+→ Real run calls Doubao Embedding API
+→ Upsert knowledge_documents
+→ Upsert knowledge_chunks
+→ Write knowledge_ingestion_runs
+```
+
+Embedding input format:
+
+```text
+Title: {document.title}
+Category: {document.category}
+Summary: {document.summary}
+Heading: {section.heading}
+Tags: {section.tags.join(", ")}
+
+{section.content}
+```
+
+Dry-run output:
+
+```text
+documentsSeen
+sectionsSeen
+chunksPlanned
+invalidFiles
+categories
+estimatedEmbeddingCalls
+```
+
+Real import rules:
+
+- `knowledge_documents.slug = seed.id`.
+- One section creates one chunk by default.
+- Upsert chunks by `document_id + chunk_index`.
+- Skip embedding when `content_hash` is unchanged.
+- Regenerate embedding when `content_hash` changes.
+- Write `success` run on successful import.
+- Write `failed` run and `error_message` on failed import.
+- Store embedding provider, model, and dimensions in run metadata.
+
+## RAG Answer Flow
+
+```text
+prepareMessageGeneration
+→ fast path check
+→ resolveTravelPromptProfile
+→ retrieveTravelKnowledge
+→ buildTravelAnswerMessages with Knowledge Context
+→ DeepSeek generate / stream
+→ selectAnswerVisuals
+→ save assistant metadata: promptProfile + visuals + retrieval + sources
+→ return assistantMessage.sources
+```

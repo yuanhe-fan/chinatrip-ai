@@ -1,0 +1,68 @@
+{
+  "id": "payment-survival-basics-en",
+  "title": "Payment Survival Basics for Foreign Travelers in China",
+  "language": "en",
+  "category": "payment_survival",
+  "sourceType": "internal_seed",
+  "trustLevel": "product_curated",
+  "updatedAt": "2026-06-09",
+  "summary": "Practical payment setup, fallback options, and show-to-staff phrases for foreign travelers who need to pay in China.",
+  "sections": [
+    {
+      "id": "before-arrival-setup",
+      "heading": "Before arrival setup",
+      "tags": [
+        "alipay",
+        "wechat pay",
+        "foreign card",
+        "identity verification",
+        "before arrival",
+        "backup payment"
+      ],
+      "content": "Before arriving in China, foreign travelers should set up at least one mobile payment app, and ideally both Alipay and WeChat Pay. Add an international bank card if the app supports it, complete identity verification when requested, and check that the app can open normally before departure. Do not rely on one app or one card only. Keep a backup bank card, keep access to your card issuer's verification method, and prepare a small amount of cash for situations where mobile payment, card verification, or mobile data fails."
+    },
+    {
+      "id": "if-mobile-payment-fails",
+      "heading": "If mobile payment fails",
+      "tags": [
+        "payment failed",
+        "alipay failed",
+        "wechat pay failed",
+        "mobile data",
+        "cash",
+        "foreign card",
+        "merchant"
+      ],
+      "content": "If Alipay or WeChat Pay fails at a shop, first check mobile data, app login status, and whether the payment screen is loading correctly. Then try the other payment app if you have one set up. If both apps fail, ask whether the merchant accepts a foreign card or cash. Larger hotels, airports, international malls, and major restaurants are more likely to have staff who can help with foreign cards or cash than small local shops. For taxis, street vendors, and small stores, mobile payment is often expected, so it is safer to solve app or network issues before you are in a time-sensitive situation."
+    },
+    {
+      "id": "backup-payment-options",
+      "heading": "Backup payment options",
+      "tags": [
+        "backup",
+        "cash",
+        "atm",
+        "foreign card",
+        "hotel front desk",
+        "travel companion",
+        "single point of failure"
+      ],
+      "content": "A practical backup plan should include more than one option: a second mobile payment app, a second bank card, a small amount of cash, and a place where you can ask for help. If your foreign card fails in one store, try a larger hotel, airport counter, bank, or international mall before assuming the card will not work anywhere. ATMs may be useful, but availability, card compatibility, withdrawal limits, and fees can vary. If you travel with someone else, make sure at least one other person also has a working payment method. Avoid putting all payment access on one phone, one app, or one card."
+    },
+    {
+      "id": "useful-phrases-to-show-staff",
+      "heading": "Useful phrases to show staff",
+      "tags": [
+        "chinese phrase",
+        "show staff",
+        "shop",
+        "taxi",
+        "hotel",
+        "payment failed",
+        "cash",
+        "foreign card"
+      ],
+      "content": "Use short Chinese text when you need help paying. Show this to shop staff: 我的支付宝/微信支付失败了，可以刷外卡吗？ This means: My Alipay or WeChat Pay failed. Can I use a foreign card? Show this if you want to ask about cash: 可以用现金吗？ This means: Can I pay with cash? For a taxi or ride situation, show: 我的手机支付现在不能用，可以用现金吗？ This means: My mobile payment is not working right now. Can I pay with cash? At a hotel front desk, show: 我是外国游客，支付遇到问题，可以帮我看看吗？ This means: I am a foreign traveler and I am having a payment problem. Could you help me check it?"
+    }
+  ]
+}

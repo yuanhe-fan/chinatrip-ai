@@ -37,6 +37,17 @@ enum AiProvider {
   deepseek
 }
 
+enum KnowledgeDocumentStatus {
+  active
+  archived
+}
+
+enum KnowledgeIngestionStatus {
+  running
+  success
+  failed
+}
+
 model Profile {
   id        String   @id @default(uuid()) @db.Uuid
   userId    String   @unique @map("user_id")
@@ -163,4 +174,63 @@ model AiUsageLog {
   @@index([chatId, createdAt])
   @@index([messageId])
   @@map("ai_usage_logs")
+}
+
+model KnowledgeDocument {
+  id              String                  @id @default(uuid()) @db.Uuid
+  slug            String                  @unique
+  title           String
+  language        Language                @default(en)
+  category        String
+  sourceType      String                  @default("internal_seed") @map("source_type")
+  trustLevel      String                  @default("product_curated") @map("trust_level")
+  status          KnowledgeDocumentStatus @default(active)
+  updatedAtSource DateTime?               @map("updated_at_source") @db.Timestamptz(3)
+  createdAt       DateTime                @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt       DateTime                @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  chunks KnowledgeChunk[]
+
+  @@index([language, category, status])
+  @@map("knowledge_documents")
+}
+
+model KnowledgeChunk {
+  id          String                   @id @default(uuid()) @db.Uuid
+  documentId  String                   @map("document_id") @db.Uuid
+  chunkIndex  Int                      @map("chunk_index")
+  heading     String?
+  content     String
+  contentHash String                   @map("content_hash")
+  language    Language                 @default(en)
+  category    String
+  tags        Json?
+  embedding   Unsupported("vector(2048)")
+  createdAt   DateTime                 @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt   DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  document KnowledgeDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, chunkIndex])
+  @@index([documentId])
+  @@index([language, category])
+  @@index([contentHash])
+  @@map("knowledge_chunks")
+}
+
+model KnowledgeIngestionRun {
+  id            String                   @id @default(uuid()) @db.Uuid
+  status        KnowledgeIngestionStatus @default(running)
+  startedAt     DateTime                 @default(now()) @map("started_at") @db.Timestamptz(3)
+  finishedAt    DateTime?                @map("finished_at") @db.Timestamptz(3)
+  documentsSeen Int                      @default(0) @map("documents_seen")
+  chunksSeen    Int                      @default(0) @map("chunks_seen")
+  chunksCreated Int                      @default(0) @map("chunks_created")
+  chunksUpdated Int                      @default(0) @map("chunks_updated")
+  chunksSkipped Int                      @default(0) @map("chunks_skipped")
+  errorMessage  String?                  @map("error_message")
+  metadata      Json?
+
+  @@index([startedAt])
+  @@map("knowledge_ingestion_runs")
 }

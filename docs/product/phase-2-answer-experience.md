@@ -1,6 +1,6 @@
-# ChinaTrip AI Phase 2 Product Plan
+# ChinaTrip AI Phase 2 Product Plan: Answer Experience
 
-## Summary
+## 1. Summary
 
 Phase 2 upgrades ChinaTrip AI from a general China travel Q&A assistant into a faster, more practical, visual execution assistant for foreign travelers visiting China.
 
@@ -8,20 +8,53 @@ Phase 2 focuses on five product areas:
 
 - Upstash Redis for faster high-frequency read APIs.
 - A refreshed home page question set based on real foreign-traveler pain points.
-- Specialized prompt profiles for the new quick questions, plus a general fallback profile for free-form user questions.
+- Specialized prompt profiles for quick questions, plus a general fallback profile for free-form questions.
 - A static image library that can be matched to AI answers through approved asset ids.
 - A richer AI answer module that supports text, images, step cards, Chinese phrase cards, warning cards, and backup-plan cards.
 
-Phase 2 does not include:
+## 2. Background
 
-- Knowledge base.
-- Vector database.
-- RAG.
-- CMS.
-- User-uploaded images.
-- Self-hosted or generic TCP Redis.
+Phase 1 proves the core product loop:
 
-## Home Classic Questions
+```text
+Home question
+→ Chat page
+→ AI answer
+→ Follow-up question
+→ Copy or Share answer
+→ New user asks from share page
+```
+
+After the MVP loop works, the product needs more practical answers, stronger entry points, faster repeated reads, and richer answer presentation. Phase 2 improves the user-facing answer experience without introducing a knowledge base or CMS.
+
+## 3. Phase Goal
+
+Phase 2 goal:
+
+- Make common China travel questions easier to start from the home page.
+- Route questions into more specific prompt profiles.
+- Improve answer structure for real foreign-traveler pain points.
+- Add approved static visuals without letting the model invent image URLs.
+- Cache high-frequency read APIs without making Redis a hard dependency.
+
+## 4. Product Scope
+
+Phase 2 includes:
+
+- Six home classic questions.
+- Prompt profile routing.
+- Quick-question submenu support for itinerary and pain-point follow-ups.
+- Upstash Redis cache for selected read APIs.
+- Static answer asset registry.
+- Server-side visual matching.
+- AI answer UI support for images and structured visual cards.
+- Share page support for visual answers.
+
+Phase 2 keeps the app browser-based and does not add a new major product surface.
+
+## 5. User Experience
+
+### 5.1 Home Classic Questions
 
 The home page keeps six classic question entries. Clicking a classic question only fills the input. It does not create a chat. The user still creates a chat by clicking Ask AI or pressing Enter.
 
@@ -45,6 +78,8 @@ Home page requirements:
 - `Language` is no longer a home page entry, but `language_cards` remains available for free-form communication questions.
 - Food remains supported for free-form questions, but it is not a home page entry in this phase.
 
+### 5.2 Itinerary Menu
+
 Itinerary menu questions:
 
 - `Plan a one-day Beijing itinerary for a first-time visitor.`
@@ -53,7 +88,22 @@ Itinerary menu questions:
 - `Plan a one-day Xi'an itinerary for a first-time visitor.`
 - `Help me create a custom China travel plan.`
 
-## Prompt Profiles
+### 5.3 Visual Answer Experience
+
+AI answers may include text, approved images, phrase cards, warning cards, backup cards, and checklist cards.
+
+Rendering requirements:
+
+- Mobile: stack images above text, single-column cards, no text overflow.
+- Desktop: support hero image, inline images, embedded POI thumbnails inside itinerary steps, side-by-side image/text layouts, and 2-4 image grids.
+- Itinerary POI images should appear close to the matching route item when possible, with click-to-enlarge preview.
+- Copy action copies text only.
+- Share action preserves text and visual metadata.
+- Chat page and share page use the same answer rendering rules.
+
+## 6. Functional Requirements
+
+### 6.1 Prompt Profiles
 
 Phase 2 keeps the current core prompt system but adds profile-specific prompt packets.
 
@@ -82,21 +132,6 @@ type PromptProfile =
   | "general_travel";
 ```
 
-Recommended prompt file layout:
-
-```text
-lib/ai/prompts/profiles/
-  payment-survival.ts
-  internet-apps.ts
-  transport-workflow.ts
-  tickets-booking.ts
-  language-cards.ts
-  itinerary-planning.ts
-  food-ordering.ts
-  emergency-help.ts
-  general-travel.ts
-```
-
 Routing rules:
 
 - Exact quick-question submission uses the quick question's `promptProfile`.
@@ -117,7 +152,7 @@ Profile requirements:
 - `emergency_help`: cover passport loss, phone loss, payment loss, hospitals, police, embassy help, and safety-first action steps.
 - `general_travel`: answer random travel questions and switch into a specialized profile when the user's intent clearly matches one of the supported categories.
 
-## Upstash Redis
+### 6.2 Upstash Redis
 
 Phase 2 uses Upstash Redis as a cache layer for Vercel serverless routes. Supabase PostgreSQL remains the source of truth.
 
@@ -126,12 +161,6 @@ Environment variables:
 ```env
 UPSTASH_REDIS_REST_URL=""
 UPSTASH_REDIS_REST_TOKEN=""
-```
-
-Recommended client:
-
-```text
-lib/redis.ts
 ```
 
 Client rules:
@@ -163,13 +192,7 @@ Do not cache:
 - Full private chat detail.
 - Logged-in `/api/me` responses.
 
-Local development:
-
-- Preferred: connect to a separate development Upstash Redis instance.
-- Acceptable: leave Redis environment variables unset and run without cache.
-- Do not require Docker Redis for local development.
-
-## Static Image Library
+### 6.3 Static Image Library
 
 Phase 2 uses project-owned static images and a registry. It does not use a database-backed media library.
 
@@ -193,31 +216,6 @@ public/answer-assets/
   tickets/
   language/
   emergency/
-```
-
-File naming rule:
-
-```text
-poi/{city}/{poiSlug}/{poiSlug}-{n}.jpg
-poi/{city}/{poiSlug}/{poiSlug}-{n}.webp
-{category}-{subject}-{scenario}-{variant}.jpg
-{category}-{subject}-{scenario}-{variant}.webp
-```
-
-Examples:
-
-```text
-poi/beijing/tiananmen-square/tiananmen-square-1.jpg
-poi/beijing/tiananmen-square/tiananmen-square-2.jpg
-poi/beijing/forbidden-city/forbidden-city-1.jpg
-poi/beijing/forbidden-city/forbidden-city-2.jpg
-poi/beijing/bird-nest/bird-nest-1.jpg
-payment-alipay-qr-counter.webp
-internet-esim-setup-phone.webp
-transport-didi-pickup-point.webp
-tickets-forbidden-city-passport-booking.webp
-language-taxi-driver-card.webp
-emergency-passport-lost-police.webp
 ```
 
 Registry type:
@@ -251,15 +249,9 @@ Image matching rules:
 - Itinerary images use POI-level matching instead of one city route image.
 - One POI can have multiple image assets.
 - For `itinerary_planning`, server-side code matches POI tags against the generated answer, sorts matched POIs by first appearance in the answer, and selects one best asset per POI.
-- The first implementation chooses `role: "cover"` with the lowest `priority`; if no cover exists, it falls back to the lowest-priority detail image.
-- Legacy aliases such as `beijing-forbidden-city` can temporarily map to new stable asset ids to avoid breaking older message metadata.
-- Only register image assets that actually exist under `public/answer-assets/`.
 - If no image matches, render a text-only answer.
-- Share pages render approved visual metadata when available. In the first implementation, shared answers may reselect visuals from the stored question and answer because `shared_answers` does not add a metadata column.
 
-## AI Answer UI
-
-Phase 2 upgrades AI answers from Markdown-only rendering to Markdown plus visual metadata.
+### 6.4 AI Answer UI Metadata
 
 Visual metadata:
 
@@ -287,16 +279,7 @@ Profile-specific visual guidance:
 - `food_ordering`: text and dietary phrase cards first; food images are deferred.
 - `emergency_help`: emergency warning card, help phrase card, and action checklist.
 
-Rendering requirements:
-
-- Mobile: stack images above text, single-column cards, no text overflow.
-- Desktop: support hero image, inline images, embedded POI thumbnails inside itinerary steps, side-by-side image/text layouts, and 2-4 image grids.
-- Itinerary POI images should appear close to the matching route item when possible, with click-to-enlarge preview.
-- Copy action copies text only.
-- Share action preserves text and visual metadata.
-- Chat page and share page use the same answer rendering rules.
-
-## API and Data Changes
+## 7. Data / Technical Requirements
 
 `CreateChatRequest` adds:
 
@@ -333,7 +316,16 @@ Phase 2 first implementation does not require a `shared_answers` migration. Shar
 }
 ```
 
-## Acceptance Criteria
+## 8. Non-functional Requirements
+
+- Redis must never block the core product loop.
+- Missing Redis environment variables should produce normal database fallback behavior.
+- Missing or unmatched image assets should degrade to text-only answers.
+- Mobile and desktop answer layouts must avoid overlap and text overflow.
+- AI must not fabricate image URLs.
+- Policy-sensitive answers should ask users to verify current rules.
+
+## 9. Acceptance Criteria
 
 - Home page shows six classic questions.
 - Clicking a quick question only fills the input.
@@ -350,45 +342,7 @@ Phase 2 first implementation does not require a `shared_answers` migration. Shar
 - Chat page supports visual answers.
 - Share page supports visual answer rendering.
 
-## Test Plan
-
-Home:
-
-- Verify all six cards on desktop and mobile.
-- Confirm home order is Payment, Itinerary Planning, Internet & Apps, Transport, Tickets & Booking, Emergency.
-- Click each quick question and confirm it only fills the input.
-- Submit exact quick-question text and confirm profile metadata.
-- Edit quick-question text and confirm free-form classification.
-
-Prompt:
-
-- Verify all six home profiles plus itinerary, food, and `general_travel`.
-- Confirm policy-sensitive answers ask users to verify current rules.
-- Confirm emergency answers start with safety-first steps.
-
-Redis:
-
-- Run with no Redis environment variables and confirm normal fallback.
-- Confirm cache miss reads from the database and writes Redis.
-- Confirm cache hit returns the same response shape.
-- Confirm chat creation and message completion invalidate chat-history cache.
-- Confirm Redis errors do not affect API success.
-
-Images:
-
-- Confirm every registry asset has `id`, `src`, `title`, `alt`, `category`, `tags`, and `sourceType`.
-- Confirm missing asset ids degrade gracefully.
-- Confirm itinerary answers match registered POI images by mentioned attraction names and preserve answer order.
-- Confirm image snapshots are stable on share pages.
-
-Answer UI:
-
-- Confirm Markdown rendering still works.
-- Confirm hero images, inline images, grids, phrase cards, warning cards, backup cards, and checklist cards render correctly.
-- Confirm mobile and desktop layouts do not overlap or overflow.
-- Confirm Copy copies text only and Share preserves visual metadata.
-
-Build:
+Test plan:
 
 ```bash
 pnpm lint
@@ -397,9 +351,32 @@ pnpm exec prisma validate
 pnpm build
 ```
 
-## Assumptions
+## 10. Out of Scope
 
-- Phase 2 keeps English UI and English answers as the default experience.
-- Upstash Redis is the only Redis target for Phase 2.
-- Images are static project assets.
-- No knowledge base, vector database, RAG, CMS, user-uploaded images, or self-hosted Redis are included in Phase 2.
+Phase 2 does not include:
+
+- Knowledge base.
+- Vector database.
+- RAG.
+- CMS.
+- User-uploaded images.
+- Self-hosted or generic TCP Redis.
+- External image search.
+- User-uploaded images.
+
+## 11. Implementation Order
+
+Recommended Phase 2 sequence:
+
+```text
+1. Refresh home quick questions
+2. Add quick-question metadata routing
+3. Add prompt profile classification and profile prompts
+4. Add Upstash Redis cache for selected read APIs
+5. Add static answer asset registry
+6. Add server-side visual matching
+7. Extend AI answer metadata
+8. Upgrade chat answer rendering
+9. Upgrade share answer rendering
+10. Verify prompt, Redis, image, and answer UI behavior
+```

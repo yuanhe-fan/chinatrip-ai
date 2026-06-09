@@ -2,30 +2,36 @@
 
 ## Strategy
 
-Local development uses Docker PostgreSQL. Production uses Supabase PostgreSQL.
-Prisma is the data access and migration layer.
+Local development uses Docker PostgreSQL. Production uses Supabase PostgreSQL. Prisma is the data access and migration layer.
 
-The MVP database supports the core product loop:
+Phase 3 adds a RAG knowledge base on top of the existing chat schema:
 
 ```text
-Home question
-→ Chat page
-→ AI answer
-→ Follow-up question
-→ Copy or Share answer
-→ New user asks from share page
+Project seed files
+→ Ingestion script
+→ Doubao Embedding
+→ knowledge_documents / knowledge_chunks
+→ pgvector retrieval
+→ AI answer with sources
 ```
 
-MVP keeps the schema focused on chat ownership, messages, public sharing, and
-AI usage logging. `Save answer` / bookmarks are deferred because the MVP does
-not ship a saved answers page or saved answer management.
+The database remains the source of truth for chats, messages, sharing, AI usage logs, and imported knowledge.
 
-## Tables
+## Extensions
+
+Phase 3 requires pgvector:
+
+```sql
+CREATE EXTENSION IF NOT EXISTS vector;
+```
+
+Supabase production databases must enable the `vector` extension through a migration. Local development should use a pgvector-enabled PostgreSQL image, such as `pgvector/pgvector:pg16`.
+
+## Core Tables
 
 ### profiles
 
-Stores business profile information for Supabase Auth users. The application
-does not self-implement passwords or auth tokens.
+Stores business profile information for Supabase Auth users.
 
 ```text
 id
@@ -42,7 +48,7 @@ Rules:
 
 - `user_id` stores the Supabase Auth user id and must be unique.
 - `email` may be nullable, but should be unique when present.
-- `locale` defaults to `en` in MVP.
+- `locale` defaults to `en`.
 - Future user preferences can be added here without changing chat ownership.
 
 ### anonymous_sessions
@@ -85,7 +91,7 @@ Rules:
 - `status` is `active`, `archived`, or `deleted`.
 - A chat should have either `profile_id` or `anonymous_session_id` when created.
 - After a guest logs in, a chat may keep `anonymous_session_id` and also receive `profile_id`.
-- `title` is generated from the first user question in MVP.
+- `title` is generated from the first user question.
 - Chat history is sorted by `last_message_at desc`.
 
 ### messages
@@ -108,12 +114,42 @@ updated_at
 
 Rules:
 
-- `role` is `user`, `assistant`, or `system`; MVP UI uses `user` and `assistant`.
+- `role` is `user`, `assistant`, or `system`; UI uses `user` and `assistant`.
 - `status` is `pending`, `complete`, or `failed`.
 - `sequence` is the stable display order within a chat.
 - Messages are displayed by `sequence asc`, then `created_at asc`.
 - AI generation may create a `pending` assistant message and update it to `complete`.
-- `metadata` stores provider parameters, prompt references, or debug context.
+- `metadata` stores prompt profile, visuals, completion status, retrieval metadata, and sources.
+
+Phase 3 assistant metadata may include:
+
+```json
+{
+  "retrieval": {
+    "enabled": true,
+    "matchedChunkCount": 3,
+    "matches": [
+      {
+        "chunkId": "...",
+        "documentId": "...",
+        "title": "...",
+        "heading": "...",
+        "category": "payment_survival",
+        "score": 0.82,
+        "updatedAt": "2026-06-01"
+      }
+    ]
+  },
+  "sources": [
+    {
+      "id": "...",
+      "title": "Payment Survival Basics",
+      "category": "payment_survival",
+      "updatedAt": "2026-06-01"
+    }
+  ]
+}
+```
 
 ### shared_answers
 
@@ -138,13 +174,13 @@ revoked_at
 
 Rules:
 
-- Share does not require login in Phase 1.
+- Share does not require login.
 - `profile_id` is nullable for anonymous sharing.
 - `anonymous_session_id` is nullable for logged-in sharing.
 - `share_slug` must be unique and is the public URL identifier.
 - The share page reads only `question` and `answer` snapshots, not the full chat.
 - Reuse an existing share record for the same assistant message when possible.
-- `revoked_at` supports future share cancellation; MVP may not expose this UI.
+- Phase 3 source display can be rebuilt from the assistant message metadata or snapshotted later if share immutability requires it.
 
 ### ai_usage_logs
 
@@ -173,25 +209,92 @@ Rules:
 - `provider` is `mock`, `doubao`, or `deepseek`.
 - `message_id` usually points to the assistant message and may be nullable for failed requests.
 - Successful and failed AI requests should both be logged when possible.
-- `cost_estimate` is approximate and used for product decisions.
-- `metadata` can store request ids, model parameters, and fallback details.
+- `metadata` may store prompt profile, retrieval status, hit count, embedding provider/model, retrieval latency, and source ids.
 
-## Deferred Tables
+## RAG Tables
 
-### saved_answers
+### knowledge_documents
 
-`saved_answers` is not part of the MVP schema.
+Stores knowledge document metadata imported from project seed files.
 
-Rationale:
+```text
+id
+slug
+title
+language
+category
+source_type
+trust_level
+status
+updated_at_source
+created_at
+updated_at
+```
 
-- The MVP does not ship a saved answers page.
-- Save does not create a public link.
-- Save does not create an image or export.
-- Without a retrieval surface, Save is weaker than Share and Copy.
+Rules:
 
-Add `saved_answers` later only when the product includes saved answer retrieval
-or management. A future table should store a `profile_id`, original message ids,
-and a question-answer snapshot.
+- `slug` corresponds to the seed file `id` and must be unique.
+- `language` uses the existing `Language` enum: `en` or `zh`.
+- `category` corresponds to a Prompt Profile such as `payment_survival`.
+- `source_type` is `internal_seed` in Phase 3.
+- `trust_level` is `product_curated` in Phase 3.
+- `status` supports `active` and `archived`.
+- `updated_at_source` comes from the seed file `updatedAt`.
+
+### knowledge_chunks
+
+Stores searchable knowledge chunks and embedding vectors.
+
+```text
+id
+document_id
+chunk_index
+heading
+content
+content_hash
+language
+category
+tags
+embedding
+created_at
+updated_at
+```
+
+Rules:
+
+- `document_id` references `knowledge_documents.id`.
+- `chunk_index` is the stable order inside a document.
+- One section creates one chunk by default.
+- `content_hash` is used to detect changed content during ingestion.
+- `tags` uses JSON.
+- `embedding` uses `vector(1536)`.
+- Prisma should represent `embedding` with `Unsupported("vector(1536)")`.
+- `(document_id, chunk_index)` must be unique.
+
+### knowledge_ingestion_runs
+
+Stores knowledge import batches.
+
+```text
+id
+status
+started_at
+finished_at
+documents_seen
+chunks_seen
+chunks_created
+chunks_updated
+chunks_skipped
+error_message
+metadata
+```
+
+Rules:
+
+- Dry-run does not write an ingestion run.
+- Every real import writes one run.
+- `status` supports `running`, `success`, and `failed`.
+- `metadata` records embedding provider, model, dimensions, seed directory, and error details.
 
 ## Indexes
 
@@ -208,7 +311,28 @@ shared_answers.share_slug unique
 shared_answers.assistant_message_id
 ai_usage_logs.chat_id + created_at
 ai_usage_logs.message_id
+knowledge_documents.slug unique
+knowledge_documents.language + category + status
+knowledge_chunks.document_id + chunk_index unique
+knowledge_chunks.document_id
+knowledge_chunks.language + category
+knowledge_chunks.content_hash
+knowledge_ingestion_runs.started_at
 ```
+
+Vector index guidance:
+
+- MVP data volume can start with exact pgvector search.
+- Add `ivfflat` or `hnsw` only after enough data exists to benchmark.
+- Do not tune vector index parameters before measuring recall and latency on real seed data.
+
+## Deferred Tables
+
+### saved_answers
+
+`saved_answers` is not part of the current schema.
+
+Add `saved_answers` later only when the product includes saved answer retrieval or management.
 
 ## Naming Rules
 

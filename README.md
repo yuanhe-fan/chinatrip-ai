@@ -116,8 +116,9 @@ http://localhost:3000
 
 Product:
 
-- [MVP Scope](docs/product/mvp.md)
-- [Phase 2 Product Plan](docs/product/phase-2.md)
+- [Phase 1 MVP Product Plan](docs/product/phase-1-mvp.md)
+- [Phase 2 Answer Experience Product Plan](docs/product/phase-2-answer-experience.md)
+- [Phase 3 RAG Knowledge Base Product Plan](docs/product/phase-3-rag-knowledge-base.md)
 - [Copywriting](docs/product/copywriting.md)
 - [User Flows](docs/product/user-flows.md)
 
