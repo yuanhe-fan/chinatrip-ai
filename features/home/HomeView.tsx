@@ -115,7 +115,7 @@ export function HomeView() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#14243a] text-white">
+    <main className="relative min-h-[100dvh] overflow-hidden bg-[#14243a] text-white">
       <div
         className="absolute inset-0 bg-cover bg-center"
         style={{
@@ -135,7 +135,7 @@ export function HomeView() {
         aria-hidden="true"
       />
 
-      <div className="relative z-10 flex min-h-screen flex-col px-4 py-4 pb-[env(safe-area-inset-bottom,1rem)] sm:px-8 sm:py-6 lg:px-10">
+      <div className="relative z-10 flex min-h-[100dvh] flex-col px-4 pb-[max(env(safe-area-inset-bottom),1rem)] pt-[max(env(safe-area-inset-top),1rem)] sm:px-8 sm:py-6 lg:px-10">
         <header className="flex items-center justify-between gap-4">
           <Link
             href="/"
@@ -229,33 +229,35 @@ export function HomeView() {
             </p>
           ) : null}
 
-          <div className="mt-6 flex w-full max-w-[72rem] flex-wrap items-center justify-center gap-2 sm:mt-10 sm:gap-4">
-            {HOME_QUICK_QUESTIONS.map((item) => {
+          <div className="mt-5 flex w-full max-w-[72rem] flex-wrap items-center justify-center gap-2 sm:mt-10 sm:gap-3.5">
+            {HOME_QUICK_QUESTIONS.map((item, index) => {
               const { Icon, colorClass } = questionStyles[item.id];
 
               return (
-              <button
-                key={item.label}
-                type="button"
-                disabled={isSubmitting}
-                onClick={() => {
-                  if (!isSubmitting) {
-                    setQuestion(item.question);
-                  }
-                }}
-                className="inline-flex h-auto min-h-12 max-w-full cursor-pointer items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-3.5 py-2 text-left text-[0.85rem] font-medium text-white backdrop-blur-md transition-all hover:scale-105 hover:bg-white/20 focus-visible:ring-2 focus-visible:ring-white/50 disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:scale-100 disabled:hover:bg-white/10 sm:min-h-[3.25rem] sm:gap-2.5 sm:px-4 sm:text-sm"
-              >
-                <Icon
-                  className={`h-[16px] w-[16px] shrink-0 sm:h-[18px] sm:w-[18px] ${colorClass}`}
-                  strokeWidth={2.5}
-                />
-                <span className="min-w-0">
-                  <span className="block truncate">{item.label}</span>
-                  <span className="block max-w-52 truncate text-[0.72rem] font-medium text-white/68">
-                    {item.subtitle}
+                <button
+                  key={item.label}
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={() => {
+                    if (!isSubmitting) {
+                      setQuestion(item.question);
+                    }
+                  }}
+                  className={`inline-flex h-10 max-w-full cursor-pointer items-center gap-1.5 rounded-full border border-white/18 bg-white/14 px-3 text-left text-[0.78rem] font-semibold text-white shadow-[0_10px_28px_rgba(0,0,0,0.12)] backdrop-blur-md transition hover:bg-white/22 focus:outline-none focus-visible:ring-1 focus-visible:ring-white/45 disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:bg-white/14 sm:min-h-[3.15rem] sm:gap-2.5 sm:rounded-2xl sm:bg-white/10 sm:px-4 sm:py-2 sm:text-sm sm:font-medium sm:hover:bg-white/18 ${
+                    index >= 4 ? "hidden sm:inline-flex" : ""
+                  }`}
+                >
+                  <Icon
+                    className={`h-[15px] w-[15px] shrink-0 sm:h-[18px] sm:w-[18px] ${colorClass}`}
+                    strokeWidth={2.5}
+                  />
+                  <span className="min-w-0">
+                    <span className="block truncate">{item.label}</span>
+                    <span className="hidden max-w-52 truncate text-[0.72rem] font-medium text-white/68 sm:block">
+                      {item.subtitle}
+                    </span>
                   </span>
-                </span>
-              </button>
+                </button>
               );
             })}
           </div>
