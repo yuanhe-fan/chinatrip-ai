@@ -25,6 +25,7 @@ import {
 } from "@/lib/quick-questions/questions";
 
 const CHAT_START_DELAY_MS = 350;
+const HOME_INPUT_EMPTY_ONCE_KEY = "chinatrip:home-empty-once";
 const DEFAULT_HOME_QUESTION =
   "Plan a one-day Beijing itinerary for a first-time visitor.";
 
@@ -61,9 +62,22 @@ const questionStyles: Record<
   },
 };
 
+function getInitialHomeQuestion() {
+  if (typeof window === "undefined") {
+    return DEFAULT_HOME_QUESTION;
+  }
+
+  if (window.sessionStorage.getItem(HOME_INPUT_EMPTY_ONCE_KEY)) {
+    window.sessionStorage.removeItem(HOME_INPUT_EMPTY_ONCE_KEY);
+    return "";
+  }
+
+  return DEFAULT_HOME_QUESTION;
+}
+
 export function HomeView() {
   const router = useRouter();
-  const [question, setQuestion] = useState(DEFAULT_HOME_QUESTION);
+  const [question, setQuestion] = useState(getInitialHomeQuestion);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
@@ -115,9 +129,9 @@ export function HomeView() {
   }
 
   return (
-    <main className="relative min-h-[100dvh] overflow-hidden bg-[#14243a] text-white">
+    <main className="relative min-h-[100svh] min-h-[100dvh] overflow-hidden bg-[#14243a] text-white">
       <div
-        className="absolute inset-0 bg-cover bg-center"
+        className="fixed inset-0 z-0 bg-cover bg-center"
         style={{
           backgroundImage: 'url("/home-great-wall.png")',
           backgroundPosition: "center center",
@@ -127,15 +141,15 @@ export function HomeView() {
       />
       {/* Darkened gradient overlays for better contrast */}
       <div
-        className="absolute inset-0 bg-black/20"
+        className="fixed inset-0 z-0 bg-black/20"
         aria-hidden="true"
       />
       <div
-        className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/60"
+        className="fixed inset-0 z-0 bg-gradient-to-b from-black/60 via-transparent to-black/60"
         aria-hidden="true"
       />
 
-      <div className="relative z-10 flex min-h-[100dvh] flex-col px-4 pb-[max(env(safe-area-inset-bottom),1rem)] pt-[max(env(safe-area-inset-top),1rem)] sm:px-8 sm:py-6 lg:px-10">
+      <div className="relative z-10 flex min-h-[100svh] min-h-[100dvh] flex-col px-4 pb-[max(env(safe-area-inset-bottom),1rem)] pt-[max(env(safe-area-inset-top),1rem)] sm:px-8 sm:py-6 lg:px-10">
         <header className="flex items-center justify-between gap-4">
           <Link
             href="/"

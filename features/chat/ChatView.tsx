@@ -71,6 +71,7 @@ const CHAT_NOT_FOUND_STREAM_MESSAGE =
   "This chat is no longer available in this browser session. Please start a new chat.";
 const CONTINUE_TRUNCATED_ANSWER_PROMPT =
   "Continue the previous answer from where it stopped.";
+const HOME_INPUT_EMPTY_ONCE_KEY = "chinatrip:home-empty-once";
 
 const USER_MESSAGE_SURFACE_CLASS =
   "border border-white bg-[linear-gradient(135deg,#8A552B,#14243A)] shadow-[0_30px_68px_rgba(2,8,23,0.5),0_8px_18px_rgba(2,8,23,0.24),0_0_0_1px_rgba(255,255,255,0.22),0_0_40px_rgba(255,248,239,0.28),0_1px_0_rgba(255,255,255,0.62)_inset,0_-10px_22px_rgba(2,8,23,0.16)_inset] backdrop-blur-[3px] backdrop-saturate-125";
@@ -237,11 +238,16 @@ function Sidebar({
 }) {
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
 
+  function markHomeInputEmptyOnce() {
+    window.sessionStorage.setItem(HOME_INPUT_EMPTY_ONCE_KEY, "1");
+  }
+
   return (
     <aside className="flex h-full w-[17.125rem] max-w-[86vw] shrink-0 flex-col border-r border-[#E6D8C7] bg-white/82 text-[#172033] shadow-[12px_0_36px_rgba(20,36,58,0.05)] backdrop-blur-xl">
       <div className="flex h-[4.25rem] shrink-0 items-center justify-between gap-3 px-5">
         <Link
           href="/"
+          onClick={markHomeInputEmptyOnce}
           className="flex min-w-0 items-center gap-3 rounded-2xl outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-[#D49A52]/40"
           aria-label="ChinaTrip AI home"
         >
@@ -1929,6 +1935,7 @@ export function ChatView({ chatId }: { chatId: string }) {
   }
 
   function handleNewChat() {
+    window.sessionStorage.setItem(HOME_INPUT_EMPTY_ONCE_KEY, "1");
     router.push("/");
   }
 
