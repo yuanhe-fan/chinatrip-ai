@@ -3,6 +3,9 @@
 :root {
   --background: #14243a;
   --foreground: #16201b;
+  --app-canvas-background:
+    linear-gradient(to bottom, rgb(5 16 31 / 0.34), rgb(5 16 31 / 0.06), rgb(5 16 31 / 0.36)),
+    url("/home-great-wall.png");
 }
 
 @theme inline {
@@ -19,28 +22,56 @@
 html,
 body {
   min-height: 100%;
-  background: var(--background);
+  background-color: var(--background);
+  background-image: var(--app-canvas-background);
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: fixed;
 }
 
 body {
   margin: 0;
-  background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
 
-@media (max-width: 767px) {
-  html,
-  body {
-    background-color: var(--background);
-    background-image:
-      linear-gradient(to bottom, rgb(0 0 0 / 0.42), rgb(0 0 0 / 0.08), rgb(0 0 0 / 0.42)),
-      url("/home-great-wall.png");
-    background-position: center center;
-    background-repeat: no-repeat;
-    background-size: cover;
-    background-attachment: fixed;
-  }
+:where(.app-min-viewport) {
+  min-height: 100svh;
+  min-height: 100dvh;
+}
+
+:where(.app-viewport) {
+  height: 100svh;
+  height: 100dvh;
+}
+
+:where(.app-safe-top) {
+  padding-top: max(env(safe-area-inset-top), 1rem);
+}
+
+:where(.app-safe-top-compact) {
+  padding-top: max(env(safe-area-inset-top), 0.75rem);
+}
+
+:where(.app-safe-bottom) {
+  padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+}
+
+:where(.app-safe-bottom-comfort) {
+  padding-bottom: max(env(safe-area-inset-bottom), 1.5rem);
+}
+
+:where(.app-safe-bottom-roomy) {
+  padding-bottom: max(env(safe-area-inset-bottom), 2rem);
+}
+
+:where(.app-immersive-bg) {
+  background-color: var(--background);
+  background-image: url("/home-great-wall.png");
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: cover;
 }
 
 button,

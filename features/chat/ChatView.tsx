@@ -1967,7 +1967,7 @@ export function ChatView({ chatId }: { chatId: string }) {
   }
 
   return (
-    <main className="h-[100dvh] min-h-[100svh] overflow-hidden bg-[#F8F5EF] bg-[linear-gradient(135deg,#F8F5EF_0%,#EEF4F6_52%,#F7F0E6_100%)] text-[#172033]">
+    <main className="app-viewport overflow-hidden bg-[#F8F5EF] bg-[linear-gradient(135deg,#F8F5EF_0%,#EEF4F6_52%,#F7F0E6_100%)] text-[#172033]">
       <div className="flex h-full">
         <div className="hidden lg:block">
           <Sidebar
@@ -2110,7 +2110,7 @@ export function ChatView({ chatId }: { chatId: string }) {
             )}
           </div>
 
-          <div className="pointer-events-none relative z-10 shrink-0 px-4 pb-[max(env(safe-area-inset-bottom),1.5rem)] pt-6 sm:px-7">
+          <div className="app-safe-bottom-comfort pointer-events-none relative z-10 shrink-0 px-4 pt-6 sm:px-7">
             <div className="pointer-events-auto mx-auto w-full max-w-[52rem]">
               <ChatInput
                 value={message}

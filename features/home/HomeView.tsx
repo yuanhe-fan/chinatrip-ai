@@ -129,14 +129,9 @@ export function HomeView() {
   }
 
   return (
-    <main className="relative min-h-[100svh] min-h-[100dvh] overflow-hidden bg-[#14243a] text-white">
+    <main className="app-min-viewport relative overflow-hidden bg-[#14243a] text-white">
       <div
-        className="fixed inset-0 z-0 bg-cover bg-center"
-        style={{
-          backgroundImage: 'url("/home-great-wall.png")',
-          backgroundPosition: "center center",
-          backgroundSize: "cover",
-        }}
+        className="app-immersive-bg fixed inset-0 z-0"
         aria-hidden="true"
       />
       {/* Darkened gradient overlays for better contrast */}
@@ -149,7 +144,7 @@ export function HomeView() {
         aria-hidden="true"
       />
 
-      <div className="relative z-10 flex min-h-[100svh] min-h-[100dvh] flex-col px-4 pb-[max(env(safe-area-inset-bottom),1rem)] pt-[max(env(safe-area-inset-top),1rem)] sm:px-8 sm:py-6 lg:px-10">
+      <div className="app-min-viewport app-safe-bottom app-safe-top relative z-10 flex flex-col px-4 sm:px-8 sm:py-6 lg:px-10">
         <header className="flex items-center justify-between gap-4">
           <Link
             href="/"
@@ -243,7 +238,7 @@ export function HomeView() {
             </p>
           ) : null}
 
-          <div className="mt-5 flex w-full max-w-[72rem] flex-wrap items-center justify-center gap-2 sm:mt-10 sm:gap-3.5">
+          <div className="mt-4 flex w-full max-w-[22rem] flex-wrap items-center justify-center gap-x-1.5 gap-y-2 sm:mt-10 sm:max-w-[72rem] sm:gap-3.5">
             {HOME_QUICK_QUESTIONS.map((item, index) => {
               const { Icon, colorClass } = questionStyles[item.id];
 
@@ -257,12 +252,12 @@ export function HomeView() {
                       setQuestion(item.question);
                     }
                   }}
-                  className={`inline-flex h-10 max-w-full cursor-pointer items-center gap-1.5 rounded-full border border-white/18 bg-white/14 px-3 text-left text-[0.78rem] font-semibold text-white shadow-[0_10px_28px_rgba(0,0,0,0.12)] backdrop-blur-md transition hover:bg-white/22 focus:outline-none focus-visible:ring-1 focus-visible:ring-white/45 disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:bg-white/14 sm:min-h-[3.15rem] sm:gap-2.5 sm:rounded-2xl sm:bg-white/10 sm:px-4 sm:py-2 sm:text-sm sm:font-medium sm:hover:bg-white/18 ${
+                  className={`inline-flex h-9 max-w-full cursor-pointer items-center gap-1.5 rounded-full border border-white/16 bg-white/12 px-2.5 text-left text-[0.76rem] font-medium text-white shadow-[0_8px_20px_rgba(0,0,0,0.10)] backdrop-blur-md transition hover:bg-white/18 focus:outline-none focus-visible:ring-1 focus-visible:ring-white/45 disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:bg-white/12 sm:min-h-[3.15rem] sm:gap-2.5 sm:rounded-2xl sm:border-white/18 sm:bg-white/10 sm:px-4 sm:py-2 sm:text-sm sm:font-medium sm:shadow-[0_10px_28px_rgba(0,0,0,0.12)] sm:hover:bg-white/18 ${
                     index >= 4 ? "hidden sm:inline-flex" : ""
                   }`}
                 >
                   <Icon
-                    className={`h-[15px] w-[15px] shrink-0 sm:h-[18px] sm:w-[18px] ${colorClass}`}
+                    className={`h-3.5 w-3.5 shrink-0 sm:h-[18px] sm:w-[18px] ${colorClass}`}
                     strokeWidth={2.5}
                   />
                   <span className="min-w-0">
