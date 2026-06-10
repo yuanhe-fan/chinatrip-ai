@@ -1967,7 +1967,7 @@ export function ChatView({ chatId }: { chatId: string }) {
   }
 
   return (
-    <main className="h-dvh overflow-hidden bg-[#F8F5EF] bg-[linear-gradient(135deg,#F8F5EF_0%,#EEF4F6_52%,#F7F0E6_100%)] text-[#172033]">
+    <main className="h-[100dvh] min-h-[100svh] overflow-hidden bg-[#F8F5EF] bg-[linear-gradient(135deg,#F8F5EF_0%,#EEF4F6_52%,#F7F0E6_100%)] text-[#172033]">
       <div className="flex h-full">
         <div className="hidden lg:block">
           <Sidebar

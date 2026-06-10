@@ -195,8 +195,8 @@ export function ShareView({
   }
 
   return (
-    <main className="min-h-dvh bg-[#F8F5EF] bg-[linear-gradient(135deg,#F8F5EF_0%,#EEF4F6_52%,#F7F0E6_100%)] text-[#172033]">
-      <header className="sticky top-0 z-30 border-b border-[#E6D8C7] bg-white/76 px-4 py-3 shadow-[0_8px_30px_rgba(20,36,58,0.04)] backdrop-blur-xl sm:px-7">
+    <main className="min-h-[100svh] min-h-[100dvh] bg-[#F8F5EF] bg-[linear-gradient(135deg,#F8F5EF_0%,#EEF4F6_52%,#F7F0E6_100%)] text-[#172033]">
+      <header className="sticky top-0 z-30 border-b border-[#E6D8C7] bg-white/76 px-4 pb-3 pt-[max(env(safe-area-inset-top),0.75rem)] shadow-[0_8px_30px_rgba(20,36,58,0.04)] backdrop-blur-xl sm:px-7 sm:py-3">
         <div className="mx-auto flex w-full max-w-[60rem] items-center justify-between gap-3">
           <Link
             href="/"
@@ -227,7 +227,7 @@ export function ShareView({
         </div>
       </header>
 
-      <div className="mx-auto flex w-full max-w-[60rem] flex-col gap-8 px-4 py-8 sm:px-7 sm:py-12">
+      <div className="mx-auto flex w-full max-w-[60rem] flex-col gap-8 px-4 pb-[max(env(safe-area-inset-bottom),2rem)] pt-8 sm:px-7 sm:py-12">
         <section className="rounded-[1.25rem] border border-[#E6D8C7] bg-[#FFFDF9] p-5 shadow-[0_18px_45px_rgba(20,36,58,0.06)] sm:p-8">
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E6D8C7]/70 pb-5">
             <div className="inline-flex items-center gap-2 rounded-full border border-[#E6D8C7] bg-[#EEF4F6] px-3 py-1.5 text-sm font-medium text-[#8A552B]">
