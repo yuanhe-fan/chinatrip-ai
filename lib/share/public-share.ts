@@ -1,4 +1,5 @@
 import type { SharedAnswerResponse } from "@/lib/api/types";
+import { readAnswerSources } from "@/lib/messages/metadata";
 import { prisma } from "@/lib/prisma";
 
 type PublicShare = SharedAnswerResponse["share"];
@@ -18,12 +19,16 @@ function toPublicShare(share: {
   answer: string;
   createdAt: Date;
   viewCount: number;
+  assistantMessage?: {
+    metadata: unknown;
+  };
 }): PublicShare {
   return {
     id: share.id,
     shareId: share.shareSlug,
     question: share.question,
     answer: share.answer,
+    sources: readAnswerSources(share.assistantMessage?.metadata),
     createdAt: share.createdAt.toISOString(),
     viewCount: share.viewCount,
   };
@@ -43,6 +48,13 @@ export async function getPublicShareBySlug(
       isPublic: true,
       revokedAt: null,
     },
+    include: {
+      assistantMessage: {
+        select: {
+          metadata: true,
+        },
+      },
+    },
   });
 
   if (!share) {
@@ -60,6 +72,13 @@ export async function getPublicShareBySlug(
     data: {
       viewCount: {
         increment: 1,
+      },
+    },
+    include: {
+      assistantMessage: {
+        select: {
+          metadata: true,
+        },
       },
     },
   });

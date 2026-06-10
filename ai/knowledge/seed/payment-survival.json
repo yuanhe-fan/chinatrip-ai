@@ -5,7 +5,7 @@
   "category": "payment_survival",
   "sourceType": "internal_seed",
   "trustLevel": "product_curated",
-  "updatedAt": "2026-06-09",
+  "updatedAt": "2026-06-10",
   "summary": "Practical payment setup, fallback options, and show-to-staff phrases for foreign travelers who need to pay in China.",
   "sections": [
     {
@@ -63,6 +63,100 @@
         "foreign card"
       ],
       "content": "Use short Chinese text when you need help paying. Show this to shop staff: 我的支付宝/微信支付失败了，可以刷外卡吗？ This means: My Alipay or WeChat Pay failed. Can I use a foreign card? Show this if you want to ask about cash: 可以用现金吗？ This means: Can I pay with cash? For a taxi or ride situation, show: 我的手机支付现在不能用，可以用现金吗？ This means: My mobile payment is not working right now. Can I pay with cash? At a hotel front desk, show: 我是外国游客，支付遇到问题，可以帮我看看吗？ This means: I am a foreign traveler and I am having a payment problem. Could you help me check it?"
+    },
+    {
+      "id": "alipay-international-card-setup",
+      "heading": "Alipay setup with an international card",
+      "tags": [
+        "alipay",
+        "international card",
+        "foreign card",
+        "identity verification",
+        "setup",
+        "visa",
+        "mastercard",
+        "test payment"
+      ],
+      "content": "Alipay is often one of the most useful payment apps for foreign travelers in China. Before departure, download Alipay, create or sign in to your account, add an international bank card if supported, and complete any identity verification requested inside the app. Keep access to your card issuer's verification method, such as SMS, email, banking app approval, or a one-time password, because card setup or first payments may trigger extra checks. After arriving, test a small payment in a low-pressure setting such as a convenience store, hotel, cafe, or airport shop. Card support, verification steps, payment limits, and risk checks can vary by card issuer and by Alipay's current in-app requirements, so do not wait until an urgent taxi, train, or restaurant payment to discover that setup is incomplete."
+    },
+    {
+      "id": "wechat-pay-international-card-setup",
+      "heading": "WeChat Pay setup with an international card",
+      "tags": [
+        "wechat pay",
+        "wechat wallet",
+        "international card",
+        "foreign card",
+        "identity verification",
+        "setup",
+        "app login",
+        "test payment"
+      ],
+      "content": "WeChat Pay is useful because many travelers already need WeChat for messaging, hotel communication, tour operators, restaurants, and some mini-program services. Before travel, make sure your WeChat account can log in reliably, then check whether WeChat Pay or Wallet is available in your app and add an international bank card if supported. Complete real-name or identity verification if the app asks for it. Because WeChat is both a communication app and a payment app, losing access to the account can affect more than payment, so keep your login method, phone number, and verification access stable during the trip. After arrival, test a small payment before relying on it for taxis, restaurants, or small shops. If WeChat Pay setup fails, keep Alipay, a card, and cash as backups."
+    },
+    {
+      "id": "alipay-vs-wechat-pay",
+      "heading": "Alipay vs WeChat Pay",
+      "tags": [
+        "alipay",
+        "wechat pay",
+        "which app",
+        "mobile payment",
+        "restaurants",
+        "taxi",
+        "mini program",
+        "backup payment"
+      ],
+      "content": "Foreign travelers should prepare both Alipay and WeChat Pay when possible. In daily life, many shops, cafes, restaurants, taxis, and services can handle one or both apps, but coverage is not identical and no single app should be treated as guaranteed everywhere. Alipay may feel more straightforward for some travel payment scenarios, while WeChat Pay can be convenient when a service is connected to WeChat, a restaurant uses a WeChat mini-program, or staff communicate with you through WeChat. If one app fails because of login, card verification, risk checks, or a temporary network issue, the other app may still work. Treat the second app as an active backup, not just something installed on your phone. Test both before you are in a time-sensitive checkout, taxi, station, or hotel situation."
+    },
+    {
+      "id": "qr-code-payment-methods",
+      "heading": "QR code payment methods",
+      "tags": [
+        "qr code",
+        "scan to pay",
+        "payment code",
+        "alipay",
+        "wechat pay",
+        "merchant",
+        "amount confirmation",
+        "payment safety"
+      ],
+      "content": "Mobile payment in China often uses QR codes in two ways. In one method, the traveler scans the merchant's QR code, enters or confirms the amount, and pays in Alipay or WeChat Pay. This is common at small shops, counters, and some restaurants. In the other method, the traveler opens a payment code in the app and the merchant scans it with a register or handheld device. This is common in supermarkets, convenience stores, chain restaurants, malls, and transport-related counters. Before confirming payment, check the amount, merchant name if shown, and whether the app says the payment succeeded. Do not keep your payment code open longer than needed, and do not show it casually to strangers. If the QR code will not load, check mobile data, app login status, and try the other payment app."
+    },
+    {
+      "id": "foreign-card-and-cash-by-scenario",
+      "heading": "Foreign cards and cash by scenario",
+      "tags": [
+        "foreign card",
+        "cash",
+        "visa",
+        "mastercard",
+        "hotel",
+        "airport",
+        "mall",
+        "taxi",
+        "small shops",
+        "unattended machines"
+      ],
+      "content": "Foreign cards and cash can be useful backups, but acceptance varies by scenario. Larger hotels, airport counters, international malls, major tourist areas, and some international chains are more likely to help with foreign cards. Small local shops, street vendors, taxis, small restaurants, and unattended machines may be less predictable and may expect mobile payment. Cash can help in some face-to-face situations, especially when mobile payment fails, but it may be inconvenient for online booking, app-based services, QR-only flows, or places without change. Do not assume that Visa, Mastercard, or cash will solve every payment problem. A safer plan is to combine mobile payment, at least one physical card, a small amount of cash, and fallback locations such as a hotel front desk, airport service counter, bank, or larger mall."
+    },
+    {
+      "id": "phone-battery-or-network-payment-risk",
+      "heading": "Phone battery or network payment risk",
+      "tags": [
+        "battery",
+        "mobile data",
+        "sim",
+        "esim",
+        "phone lost",
+        "app login",
+        "offline",
+        "backup payment",
+        "power bank",
+        "cash"
+      ],
+      "content": "In China, payment access often depends on your phone, mobile data, app login, and card verification access. If your phone battery dies, mobile data stops working, your SIM or eSIM has a problem, or a payment app logs you out, you may lose access to your main payment method even if your bank card is valid. Carry a power bank, keep your phone charged before long taxi rides or train transfers, and save your hotel name and address somewhere you can access offline. Keep at least one physical card and a small amount of cash separate from your phone. If traveling with others, make sure another person also has a working payment method. Avoid depending on one phone, one app, one SIM, or one card for all payment situations."
     }
   ]
 }

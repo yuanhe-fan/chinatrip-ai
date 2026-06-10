@@ -267,8 +267,8 @@ Rules:
 - One section creates one chunk by default.
 - `content_hash` is used to detect changed content during ingestion.
 - `tags` uses JSON.
-- `embedding` uses `vector(1536)`.
-- Prisma should represent `embedding` with `Unsupported("vector(1536)")`.
+- `embedding` uses `vector(2048)`.
+- Prisma should represent `embedding` with `Unsupported("vector(2048)")`.
 - `(document_id, chunk_index)` must be unique.
 
 ### knowledge_ingestion_runs

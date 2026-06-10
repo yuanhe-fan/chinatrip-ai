@@ -15,6 +15,7 @@ export type GenerateTravelAnswerInput = {
   language?: TravelAnswerLanguage;
   history?: TravelAnswerMessage[];
   metadata?: Record<string, unknown>;
+  knowledgeContext?: string | null;
 };
 
 export type GenerateTravelAnswerResult = {

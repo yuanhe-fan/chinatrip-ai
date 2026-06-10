@@ -281,7 +281,7 @@ EMBEDDING_PROVIDER="doubao"
 EMBEDDING_BASE_URL="https://ark.cn-beijing.volces.com/api/v3"
 EMBEDDING_API_KEY=""
 EMBEDDING_MODEL="doubao-embedding-text-240515"
-EMBEDDING_DIMENSIONS="1536"
+EMBEDDING_DIMENSIONS="2048"
 ```
 
 Responsibilities:

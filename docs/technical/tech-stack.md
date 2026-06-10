@@ -60,7 +60,7 @@ EMBEDDING_PROVIDER="doubao"
 EMBEDDING_BASE_URL="https://ark.cn-beijing.volces.com/api/v3"
 EMBEDDING_API_KEY=""
 EMBEDDING_MODEL="doubao-embedding-text-240515"
-EMBEDDING_DIMENSIONS="1536"
+EMBEDDING_DIMENSIONS="2048"
 ```
 
 Responsibilities:
@@ -89,7 +89,7 @@ Supabase Auth handles Google OAuth and session management. The project should no
 
 PostgreSQL stores chats, messages, shared answers, AI usage logs, and Phase 3 knowledge base data. Prisma provides schema management and typed access for ordinary relational data.
 
-Phase 3 adds pgvector so PostgreSQL can store embedding vectors and perform similarity search. Prisma should represent vector columns with `Unsupported("vector(1536)")`, and vector queries should use raw SQL where necessary.
+Phase 3 adds pgvector so PostgreSQL can store embedding vectors and perform similarity search. Prisma should represent vector columns with `Unsupported("vector(2048)")`, and vector queries should use raw SQL where necessary.
 
 Local development should use a pgvector-enabled PostgreSQL Docker image. Production uses Supabase PostgreSQL with the `vector` extension enabled.
 

@@ -5,13 +5,16 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { z } from "zod";
+import {
+  getEmbeddingConfigFromEnv,
+  requestTextEmbedding,
+} from "../lib/ai/embedding-client.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, "..");
 const seedDir = path.join(repoRoot, "ai", "knowledge", "seed");
 const isDryRun = process.argv.includes("--dry-run");
-const embeddingRequestTimeoutMs = 30_000;
 
 const supportedCategories = [
   "payment_survival",
@@ -181,42 +184,6 @@ function createPlannedChunks(documents) {
   );
 }
 
-function requireEnv(name) {
-  const value = process.env[name]?.trim();
-
-  if (!value) {
-    throw new Error(`Missing required environment variable: ${name}`);
-  }
-
-  return value;
-}
-
-function getEmbeddingConfig() {
-  const dimensions = Number(requireEnv("EMBEDDING_DIMENSIONS"));
-  const baseUrl = requireEnv("EMBEDDING_BASE_URL").replace(/\/+$/, "");
-  const model = requireEnv("EMBEDDING_MODEL");
-
-  if (!Number.isInteger(dimensions) || dimensions <= 0) {
-    throw new Error("EMBEDDING_DIMENSIONS must be a positive integer.");
-  }
-
-  return {
-    baseUrl,
-    apiKey: requireEnv("EMBEDDING_API_KEY"),
-    model,
-    dimensions,
-    provider: process.env.EMBEDDING_PROVIDER?.trim() || "doubao",
-  };
-}
-
-function createEmbeddingsUrl(baseUrl) {
-  if (baseUrl.endsWith("/embeddings/multimodal")) {
-    return baseUrl;
-  }
-
-  return `${baseUrl.replace(/\/embeddings$/, "")}/embeddings/multimodal`;
-}
-
 async function embedText(text, config, context) {
   const maxAttempts = 3;
   let lastError;
@@ -263,71 +230,10 @@ function formatChunkContext(context) {
 }
 
 async function requestEmbedding(text, config) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), embeddingRequestTimeoutMs);
-
-  const response = await fetch(createEmbeddingsUrl(config.baseUrl), {
-    method: "POST",
-    signal: controller.signal,
-    headers: {
-      Authorization: `Bearer ${config.apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: config.model,
-      encoding_format: "float",
-      input: [
-        {
-          type: "text",
-          text,
-        },
-      ],
-    }),
-  }).catch((error) => {
-    if (error?.name === "AbortError") {
-      throw new Error(`Embedding API request timed out after ${embeddingRequestTimeoutMs}ms.`);
-    }
-
-    throw error;
-  }).finally(() => clearTimeout(timeout));
-
-  const rawText = await response.text();
-  let payload;
-
-  try {
-    payload = rawText ? JSON.parse(rawText) : {};
-  } catch {
-    throw new Error(`Embedding API returned non-JSON response: ${rawText}`);
-  }
-
-  if (!response.ok) {
-    throw new Error(
-      `Embedding API request failed with ${response.status}: ${JSON.stringify(payload)}`,
-    );
-  }
-
-  const embedding = Array.isArray(payload?.data)
-    ? payload.data[0]?.embedding
-    : payload?.data?.embedding;
-
-  if (
-    !Array.isArray(embedding) ||
-    !embedding.every((value) => typeof value === "number")
-  ) {
-    throw new Error("Embedding API response did not include a numeric embedding array.");
-  }
-
-  if (embedding.length !== config.dimensions) {
-    throw new Error(
-      `Embedding dimension mismatch: expected ${config.dimensions}, received ${embedding.length}.`,
-    );
-  }
-
-  return {
-    embedding,
-    model: typeof payload.model === "string" ? payload.model : config.model,
-    dimensions: embedding.length,
-  };
+  return requestTextEmbedding({
+    text,
+    config,
+  });
 }
 
 function toVectorLiteral(embedding) {
@@ -478,7 +384,7 @@ async function runIngest() {
   }
 
   const plannedChunks = createPlannedChunks(documents);
-  const embeddingConfig = getEmbeddingConfig();
+  const embeddingConfig = getEmbeddingConfigFromEnv();
   const prisma = new PrismaClient();
   let runId;
   const counts = {

@@ -46,8 +46,9 @@ export function buildTravelAnswerMessages(
         buildIntentClassifierPrompt(),
         buildPromptProfilePrompt(promptProfile),
         buildTemplatesPrompt(),
+        input.knowledgeContext,
         buildOutputContractPrompt(),
-      ].join("\n"),
+      ].filter(Boolean).join("\n"),
     },
     ...history,
     {

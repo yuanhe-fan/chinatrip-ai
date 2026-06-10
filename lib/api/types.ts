@@ -12,6 +12,13 @@ export type AnswerVisuals = {
   }>;
 };
 
+export type AnswerSource = {
+  id: string;
+  title: string;
+  category: string;
+  updatedAt: string | null;
+};
+
 export type CreateChatRequest = {
   message: string;
   language?: "en" | "zh";
@@ -52,6 +59,7 @@ export type ChatDetailMessage = {
   errorCode: string | null;
   errorMessage: string | null;
   visuals?: AnswerVisuals;
+  sources?: AnswerSource[];
   quickQuestionMenu?: {
     sourceQuestionId: string;
     promptProfile: PromptProfile;
@@ -120,6 +128,7 @@ export type SendMessageResponse = {
     errorCode: string | null;
     errorMessage: string | null;
     visuals?: AnswerVisuals;
+    sources?: AnswerSource[];
     quickQuestionMenu?: ChatDetailMessage["quickQuestionMenu"];
     truncated?: boolean;
     maybeTruncated?: boolean;
@@ -195,6 +204,7 @@ export type CreateSharedAnswerResponse = {
     question: string;
     answer: string;
     visuals?: AnswerVisuals;
+    sources?: AnswerSource[];
     createdAt: string;
   };
 };
@@ -206,6 +216,7 @@ export type SharedAnswerResponse = {
     question: string;
     answer: string;
     visuals?: AnswerVisuals;
+    sources?: AnswerSource[];
     createdAt: string;
     viewCount: number;
   };

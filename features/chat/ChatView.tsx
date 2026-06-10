@@ -2,6 +2,7 @@
 
 import { ChatInput } from "@/components/ChatInput";
 import { AnswerContent } from "@/components/AnswerContent";
+import { AnswerSources } from "@/components/AnswerSources";
 import { ImagePreviewOverlay } from "@/components/ImagePreviewOverlay";
 import { LoginModal } from "@/components/LoginModal";
 import { UserProfileAvatar } from "@/components/UserProfileAvatar";
@@ -111,6 +112,7 @@ function toChatMessage(message: ChatDetailMessage): ChatMessage {
         : "complete",
     errorCode: message.errorCode,
     visuals: message.visuals,
+    sources: message.sources,
     quickQuestionMenu: message.quickQuestionMenu,
     truncated: message.truncated,
     maybeTruncated: message.maybeTruncated,
@@ -144,6 +146,7 @@ function toAssistantChatMessage(
     status: message.status,
     errorCode: message.errorCode,
     visuals: message.visuals,
+    sources: message.sources,
     quickQuestionMenu: message.quickQuestionMenu,
     truncated: message.truncated,
     maybeTruncated: message.maybeTruncated,
@@ -572,6 +575,7 @@ function AssistantMessageBubble({
   status,
   content,
   visuals,
+  sources,
   quickQuestionMenu,
   truncated,
   maybeTruncated,
@@ -587,6 +591,7 @@ function AssistantMessageBubble({
   status?: ChatMessage["status"];
   content: string;
   visuals?: ChatMessage["visuals"];
+  sources?: ChatMessage["sources"];
   quickQuestionMenu?: ChatMessage["quickQuestionMenu"];
   truncated?: boolean;
   maybeTruncated?: boolean;
@@ -736,6 +741,11 @@ function AssistantMessageBubble({
                 visuals={visuals}
                 onOpenImage={onOpenImage}
               />
+              {sources?.length ? (
+                <div className="mt-5">
+                  <AnswerSources sources={sources} />
+                </div>
+              ) : null}
               {quickQuestionMenu ? (
                 <QuickQuestionMenuPanel
                   menu={quickQuestionMenu}
@@ -819,6 +829,7 @@ function MessageItem({
       status={message.status}
       content={message.content}
       visuals={message.visuals}
+      sources={message.sources}
       quickQuestionMenu={message.quickQuestionMenu}
       truncated={message.truncated}
       maybeTruncated={message.maybeTruncated}

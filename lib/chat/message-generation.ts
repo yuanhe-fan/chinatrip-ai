@@ -5,6 +5,7 @@ import {
 } from "@/lib/auth/current-identity";
 import {
   readAnswerCompletionStatus,
+  readAnswerSources,
   readAnswerVisuals,
   readQuickQuestionMenu,
 } from "@/lib/messages/metadata";
@@ -112,6 +113,7 @@ export function serializeAssistantMessage(message: ChatMessageRecord) {
     errorCode: message.errorCode,
     errorMessage: message.errorMessage,
     visuals: readAnswerVisuals(message.metadata),
+    sources: readAnswerSources(message.metadata),
     quickQuestionMenu: readQuickQuestionMenu(message.metadata),
     truncated: completionStatus.truncated,
     maybeTruncated: completionStatus.maybeTruncated,

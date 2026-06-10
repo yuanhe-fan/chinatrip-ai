@@ -1,4 +1,4 @@
-import type { AnswerVisuals } from "@/lib/api/types";
+import type { AnswerSource, AnswerVisuals } from "@/lib/api/types";
 import { isPromptProfile } from "@/lib/quick-questions/profiles";
 import { findQuickQuestionById } from "@/lib/quick-questions/questions";
 import { getQuickQuestionMenu } from "@/lib/quick-questions/menus";
@@ -55,6 +55,29 @@ export function readAnswerVisuals(metadata: unknown): AnswerVisuals | undefined 
     embeddedAssetIds: embeddedAssetIds?.length ? embeddedAssetIds : undefined,
     cards: cards?.length ? cards : undefined,
   };
+}
+
+function isAnswerSource(value: unknown): value is AnswerSource {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  return (
+    typeof value.id === "string" &&
+    typeof value.title === "string" &&
+    typeof value.category === "string" &&
+    (typeof value.updatedAt === "string" || value.updatedAt === null)
+  );
+}
+
+export function readAnswerSources(metadata: unknown): AnswerSource[] | undefined {
+  if (!isRecord(metadata) || !Array.isArray(metadata.sources)) {
+    return undefined;
+  }
+
+  const sources = metadata.sources.filter(isAnswerSource).slice(0, 3);
+
+  return sources.length > 0 ? sources : undefined;
 }
 
 export function readPromptProfile(metadata: unknown) {

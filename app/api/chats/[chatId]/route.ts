@@ -7,6 +7,7 @@ import {
 } from "@/lib/auth/current-identity";
 import {
   readAnswerCompletionStatus,
+  readAnswerSources,
   readAnswerVisuals,
   readQuickQuestionMenu,
 } from "@/lib/messages/metadata";
@@ -87,6 +88,10 @@ export async function GET(_request: Request, context: RouteContext) {
           visuals:
             message.role === "assistant"
               ? readAnswerVisuals(message.metadata)
+              : undefined,
+          sources:
+            message.role === "assistant"
+              ? readAnswerSources(message.metadata)
               : undefined,
           quickQuestionMenu:
             message.role === "assistant"

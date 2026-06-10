@@ -2,6 +2,7 @@
 
 import { ChatInput } from "@/components/ChatInput";
 import { AnswerContent } from "@/components/AnswerContent";
+import { AnswerSources } from "@/components/AnswerSources";
 import { ImagePreviewOverlay } from "@/components/ImagePreviewOverlay";
 import { ApiClientError, apiFetch } from "@/lib/api/client";
 import {
@@ -284,6 +285,11 @@ export function ShareView({
                     visuals={share?.visuals}
                     onOpenImage={handleOpenImagePreview}
                   />
+                  {share?.sources?.length ? (
+                    <div className="mt-5">
+                      <AnswerSources sources={share.sources} />
+                    </div>
+                  ) : null}
                 </div>
               </article>
             </>

@@ -8,7 +8,7 @@ import {
   createChatOwnerWhere,
   getCurrentIdentity,
 } from "@/lib/auth/current-identity";
-import { readAnswerVisuals } from "@/lib/messages/metadata";
+import { readAnswerSources, readAnswerVisuals } from "@/lib/messages/metadata";
 import { prisma } from "@/lib/prisma";
 import { createShareCacheKey, safeDelete } from "@/lib/cache/redis";
 
@@ -174,6 +174,7 @@ export async function POST(request: Request) {
         question: share.question,
         answer: share.answer,
         visuals: readAnswerVisuals(assistantMessage.metadata),
+        sources: readAnswerSources(assistantMessage.metadata),
         createdAt: share.createdAt.toISOString(),
       },
     };

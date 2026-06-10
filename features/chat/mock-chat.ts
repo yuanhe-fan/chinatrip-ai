@@ -1,4 +1,4 @@
-import type { AnswerVisuals } from "@/lib/api/types";
+import type { AnswerSource, AnswerVisuals } from "@/lib/api/types";
 import type { PromptProfile } from "@/lib/quick-questions/profiles";
 import type { QuickSubQuestion } from "@/lib/quick-questions/menus";
 
@@ -12,6 +12,7 @@ export type ChatMessage = {
   status?: "complete" | "loading" | "failed";
   errorCode?: string | null;
   visuals?: AnswerVisuals;
+  sources?: AnswerSource[];
   quickQuestionMenu?: {
     sourceQuestionId: string;
     promptProfile: PromptProfile;
