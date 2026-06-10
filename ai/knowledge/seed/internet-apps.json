@@ -1,0 +1,97 @@
+{
+  "id": "internet-apps-basics-en",
+  "title": "Internet and App Setup for Foreign Travelers in China",
+  "language": "en",
+  "category": "internet_apps",
+  "sourceType": "internal_seed",
+  "trustLevel": "product_curated",
+  "updatedAt": "2026-06-10",
+  "summary": "Practical internet, app, SIM, eSIM, roaming, verification, and offline backup advice for foreign travelers visiting China.",
+  "sections": [
+    {
+      "id": "internet-apps-overview",
+      "heading": "Internet and app setup overview",
+      "tags": [
+        "internet",
+        "apps",
+        "sim",
+        "esim",
+        "vpn",
+        "roaming",
+        "offline backups",
+        "before departure"
+      ],
+      "content": "Before traveling to China, prepare your internet access and essential apps while you still have reliable access to your usual phone number, app stores, banking apps, email, and password tools. Install and sign in to key travel apps before departure, including mobile payment, maps or navigation, translation, ride-hailing, airline or train apps, and hotel booking apps. Decide whether you will use international roaming, a China SIM, an eSIM, or a combination. Some foreign apps or services may be unreliable or unavailable in mainland China, so do not depend on a single messaging, map, cloud storage, or authentication method. Save offline copies of your passport page, visa or entry documents, hotel address in Chinese, flight and train details, travel insurance, emergency contacts, and payment backup information."
+    },
+    {
+      "id": "essential-apps-before-china",
+      "heading": "Essential apps to install before going to China",
+      "tags": [
+        "essential apps",
+        "alipay",
+        "wechat",
+        "maps",
+        "translation",
+        "didi",
+        "booking apps"
+      ],
+      "content": "Install essential apps before departure, because app store access, SMS verification, identity checks, and bank verification are easier to handle at home. Most travelers should prepare at least one mobile payment app, such as Alipay or WeChat Pay, and ideally both. WeChat is also useful for communication with hotels, guides, restaurants, and local contacts. Add a translation app with offline language packs, a map or navigation option that works for your device, your airline and hotel booking apps, and any ride-hailing or transport app you plan to use. Keep your banking app active in case card verification is needed. Test login before flying, and avoid relying on apps that are only stored in cloud backup or require a new SMS code every time you open them."
+    },
+    {
+      "id": "connectivity-choice-roaming-sim-esim-wifi",
+      "heading": "Choosing roaming, SIM, eSIM, or airport Wi-Fi",
+      "tags": [
+        "roaming",
+        "sim",
+        "esim",
+        "airport wifi",
+        "mobile data",
+        "phone number",
+        "connectivity"
+      ],
+      "content": "Choose your connectivity plan before arrival. International roaming is often the simplest because it keeps your home phone number active for bank and app verification, but pricing and data speed depend on your carrier. A local SIM or travel eSIM can be useful for mobile data, maps, translation, ride-hailing, and payments, but setup rules, device compatibility, and identity requirements can vary. Airport Wi-Fi can help during arrival, but it should not be your only plan because connection, login, and verification flows may be inconvenient when you are tired or moving with luggage. A practical setup is to keep your home number reachable for verification while also preparing a stable data option for daily use. Confirm device eSIM support, roaming fees, hotspot rules, and whether your phone is unlocked before departure."
+    },
+    {
+      "id": "blocked-or-unreliable-foreign-apps",
+      "heading": "Preparing for foreign apps that may not work reliably",
+      "tags": [
+        "google",
+        "whatsapp",
+        "instagram",
+        "blocked apps",
+        "vpn",
+        "maps",
+        "email",
+        "backup communication"
+      ],
+      "content": "Some foreign apps and services may be unreliable or unavailable in mainland China, including certain Google services, social media apps, messaging tools, cloud storage, and map services. Do not build your trip around one foreign app that you cannot replace. Before departure, save important confirmations offline, export key addresses, and share a backup contact method with travel companions. If you rely on a VPN or other access tool, set it up and test it before you arrive, but do not assume it will always work. Keep at least one China-friendly communication path, such as WeChat or hotel phone contact, and make sure you can access bookings, passport scans, insurance details, and emergency contacts even if your usual email, cloud drive, or messaging app is temporarily unavailable."
+    },
+    {
+      "id": "sms-verification-codes-in-china",
+      "heading": "Receiving SMS verification codes in China",
+      "tags": [
+        "sms verification",
+        "bank code",
+        "phone number",
+        "roaming",
+        "two factor authentication",
+        "login"
+      ],
+      "content": "SMS verification can affect payments, banking, email, ride-hailing, hotel apps, and account recovery. Keep your home phone number active if important services send one-time codes to that number. Before departure, confirm roaming support for SMS, check whether your bank requires app approval instead of SMS, and make sure you know how to receive codes without switching your primary number unexpectedly. If you change SIM cards, keep the original SIM safe and avoid losing access to the number tied to your bank, email, Apple ID, Google account, payment apps, and travel bookings. Where possible, add backup authentication methods such as authenticator apps, email recovery, banking app approval, or trusted devices before the trip. Do not wait until checkout, hotel check-in, or a train booking to discover that you cannot receive a code."
+    },
+    {
+      "id": "offline-backups-before-departure",
+      "heading": "Offline backups to prepare before departure",
+      "tags": [
+        "offline backups",
+        "hotel address",
+        "passport copy",
+        "travel insurance",
+        "emergency contacts",
+        "maps",
+        "documents"
+      ],
+      "content": "Prepare offline backups for anything you would need if mobile data, cloud access, or a foreign app fails. Save your hotel name and address in Chinese, booking confirmations, flight and train details, passport photo page, visa or entry documents if applicable, travel insurance, emergency contacts, embassy or consulate contact information, and a few payment fallback notes. Keep these in more than one place, such as your phone files, screenshots, a password-protected document, printed paper, and a travel companion's phone. Download offline translation packs and save map pins for hotels, stations, airports, and major attractions. Also write down short Chinese phrases for asking hotel staff, taxi drivers, police, or station staff for help. Offline preparation reduces stress when you arrive late, lose signal, run out of battery, or cannot open your usual apps."
+    }
+  ]
+}

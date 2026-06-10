@@ -1,0 +1,96 @@
+{
+  "id": "transport-workflow-basics-en",
+  "title": "Transport Workflow Basics for Foreign Travelers in China",
+  "language": "en",
+  "category": "transport_workflow",
+  "sourceType": "internal_seed",
+  "trustLevel": "product_curated",
+  "updatedAt": "2026-06-10",
+  "summary": "Practical airport, taxi, Didi, metro, high-speed rail, and show-to-staff transport workflows for foreign travelers in China.",
+  "sections": [
+    {
+      "id": "transport-overview",
+      "heading": "Transport workflow overview",
+      "tags": [
+        "airport",
+        "metro",
+        "taxi",
+        "didi",
+        "high-speed rail",
+        "passport",
+        "transport"
+      ],
+      "content": "Transport in China is usually manageable if you prepare the workflow before you need it. Keep your hotel address in Chinese, a working mobile data plan, a payment backup, and passport access for trains or identity checks. For airport arrivals, choose between official taxi, metro, airport bus, hotel pickup, or ride-hailing based on luggage, arrival time, and your confidence with apps. For city travel, metro is often predictable and inexpensive, while Didi or taxis are useful when carrying luggage or traveling late. High-speed rail is efficient between cities but requires more planning: book with your passport name and number, arrive early enough for security and station navigation, and keep your passport ready. When in doubt, ask hotel staff to write addresses or transport instructions in Chinese."
+    },
+    {
+      "id": "airport-to-hotel-workflow",
+      "heading": "Getting from the airport to your hotel",
+      "tags": [
+        "airport to hotel",
+        "arrival",
+        "taxi",
+        "didi",
+        "metro",
+        "hotel pickup",
+        "luggage"
+      ],
+      "content": "For your first airport-to-hotel transfer, choose the option that reduces stress rather than the option that looks cheapest. Save your hotel name, full address, phone number, and nearby landmark in Chinese before landing. If you use a taxi, follow airport signs to the official taxi queue and avoid unofficial offers inside the terminal. If you use Didi or another ride-hailing app, confirm the pickup point carefully because large airports may have several ride-hailing zones. Metro or airport express trains can be efficient in cities with good airport connections, but they may be inconvenient with heavy luggage, late arrivals, or transfers. If arriving late at night or with family, consider hotel pickup or asking the hotel for transfer advice. Keep mobile payment, cash backup, and your hotel address available offline."
+    },
+    {
+      "id": "didi-or-taxi-without-chinese",
+      "heading": "Using Didi or taxis without speaking Chinese",
+      "tags": [
+        "didi",
+        "taxi",
+        "no chinese",
+        "driver",
+        "translation",
+        "hotel address",
+        "payment"
+      ],
+      "content": "If you cannot speak Chinese, prepare the destination before getting into a taxi or requesting a Didi. Use the Chinese address from your hotel, booking confirmation, map app, or attraction website. For Didi, check the car plate, pickup point, destination, and payment method before boarding. For street taxis, show the driver the full Chinese address and phone number, not only an English name. Useful text: 请送我到这个地址，谢谢。 This means: Please take me to this address, thank you. If the driver needs to call the hotel, show: 这是酒店电话，可以帮我确认地址吗？ This means: This is the hotel phone number. Could you help confirm the address? Keep translation ready, but avoid long explanations. Short text, address screenshots, and hotel staff support work better."
+    },
+    {
+      "id": "metro-in-chinese-cities",
+      "heading": "Taking the metro in Chinese cities",
+      "tags": [
+        "metro",
+        "subway",
+        "ticket machine",
+        "qr code",
+        "station",
+        "city transport",
+        "rush hour"
+      ],
+      "content": "Metro systems in major Chinese cities are usually one of the easiest ways for travelers to move around. Before entering the station, know the destination station name, transfer station, exit number if possible, and the Chinese name of the place you are visiting. Some cities support metro QR codes in apps, while others also have ticket machines or service counters. Rules and payment methods can vary by city, so follow local station signs and ask staff if needed. Security checks are common at station entrances, so keep bags ready for scanning. During rush hour, trains and transfer corridors can be crowded. If you are carrying large luggage, traveling with children, or arriving late, a taxi or Didi may be easier. Save your hotel station and exit offline so you can return without mobile data."
+    },
+    {
+      "id": "high-speed-rail-passport-workflow",
+      "heading": "Booking and boarding high-speed trains with a passport",
+      "tags": [
+        "high-speed rail",
+        "train",
+        "passport",
+        "station",
+        "ticket booking",
+        "boarding",
+        "security"
+      ],
+      "content": "High-speed rail is useful for travel between Chinese cities, but foreign travelers should plan around passport-based booking and station procedures. When booking, use your passport name and number exactly as required by the platform. Keep the same passport with you at the station. Arrive earlier than you would for a simple metro ride because large stations can involve security checks, identity checks, finding the correct waiting hall, and walking to the platform. Some gates or machines may not handle every foreign passport smoothly, so look for staff assistance if needed. Useful text: 我用护照买了这趟高铁票，请问在哪里进站？ This means: I bought this high-speed train ticket with my passport. Where should I enter? Verify departure station carefully, because large cities may have several railway stations."
+    },
+    {
+      "id": "chinese-address-card-for-transport",
+      "heading": "Chinese address cards for drivers and station staff",
+      "tags": [
+        "address card",
+        "chinese address",
+        "driver",
+        "station staff",
+        "taxi",
+        "hotel",
+        "phrase"
+      ],
+      "content": "Prepare simple Chinese address cards before you need transport help. For your hotel, save: hotel Chinese name, full street address, district, city, phone number, and a nearby landmark if available. For attractions or stations, save the Chinese place name and the exact entrance or station if there are multiple options. Show this text to drivers: 请送我到这里，谢谢。 This means: Please take me here, thank you. At a station, show: 请问去这个地方应该从哪个出口出去？ This means: Which exit should I use to get to this place? If lost, show: 我是外国游客，不会说中文。可以帮我看一下这个地址吗？ This means: I am a foreign traveler and do not speak Chinese. Could you help me check this address? Keep screenshots offline in case maps or translation apps fail."
+    }
+  ]
+}

@@ -1,0 +1,93 @@
+{
+  "id": "tickets-booking-basics-en",
+  "title": "Tickets and Booking Basics for Foreign Travelers in China",
+  "language": "en",
+  "category": "tickets_booking",
+  "sourceType": "internal_seed",
+  "trustLevel": "product_curated",
+  "updatedAt": "2026-06-10",
+  "summary": "Practical attraction ticket, reservation, passport booking, sold-out, and before-visit checklist advice for foreign travelers in China.",
+  "sections": [
+    {
+      "id": "tickets-booking-overview",
+      "heading": "Tickets and booking overview",
+      "tags": [
+        "tickets",
+        "booking",
+        "reservation",
+        "passport",
+        "attractions",
+        "museums",
+        "before visit"
+      ],
+      "content": "Many popular attractions, museums, scenic areas, and cultural sites in China may require advance booking, real-name registration, passport information, timed entry, or a specific platform. Do not assume you can always walk up and buy a ticket at the gate, especially during weekends, holidays, school breaks, and peak travel seasons. Before visiting, check whether the attraction requires reservation, whether foreign passports are accepted online, what identity document must be shown at entry, whether the site is closed on certain days, and whether bags, tripods, food, or large luggage are restricted. Keep your passport with you when the booking uses passport information. If online booking is difficult, ask your hotel, attraction staff, or a trusted travel service for help, but verify details before you travel across the city."
+    },
+    {
+      "id": "advance-reservation-for-popular-attractions",
+      "heading": "Popular attractions and advance reservations",
+      "tags": [
+        "advance reservation",
+        "popular attractions",
+        "timed entry",
+        "peak season",
+        "museums",
+        "scenic spots"
+      ],
+      "content": "Popular attractions may use advance reservations or timed entry to control visitor flow. This is common for famous museums, historic sites, scenic areas, and major city landmarks, but exact rules can change by attraction, season, holiday, and platform. Check booking requirements before building your itinerary around one place. Look for the required date, entry time, visitor name, passport number, cancellation rules, and whether the ticket must be collected or can be verified directly at the gate. Weekends, public holidays, summer breaks, and major events can sell out earlier than normal weekdays. If you are visiting a high-demand attraction, plan a backup activity nearby so the day is not ruined if tickets are unavailable, entry is delayed, or weather changes your plan."
+    },
+    {
+      "id": "foreign-passport-ticket-booking",
+      "heading": "Booking tickets with a foreign passport",
+      "tags": [
+        "foreign passport",
+        "passport booking",
+        "real-name registration",
+        "ticket platform",
+        "entry check",
+        "identity document"
+      ],
+      "content": "When booking attractions in China, foreign travelers may need to enter passport information because many tickets are linked to real-name identity checks. Use the passport name and number carefully, and bring the same passport used for booking on the visit day. Some platforms handle foreign passports smoothly, while others may require a specific document type, manual help, or a Chinese-language flow. If the booking page does not accept your passport, try an official English channel if available, ask your hotel for help, contact the attraction, or use a reputable travel booking platform. Do not guess document numbers or use another person's ID. At entry, staff may scan the passport, check the booking record, or ask you to use a manual lane if automatic gates do not recognize the document."
+    },
+    {
+      "id": "before-visiting-museums-and-scenic-spots",
+      "heading": "Before visiting museums or scenic spots",
+      "tags": [
+        "before visit",
+        "museum",
+        "scenic spot",
+        "closed day",
+        "opening hours",
+        "security check",
+        "passport"
+      ],
+      "content": "Before visiting a museum, scenic spot, or major attraction, confirm the basics on the official channel or your booking platform: reservation status, date, entry time, required identity document, entrance location, opening hours, closed days, security rules, luggage storage, weather impact, and transport route. Some museums close on specific weekdays, and some scenic areas may adjust access because of weather, capacity, construction, or events. Bring your passport if the ticket or reservation uses passport information. Arrive with enough buffer for security checks, ticket checks, and finding the correct entrance. If the attraction is large, check whether you need shuttle buses, separate tickets, or a planned walking route. Save the booking confirmation and attraction address offline in case mobile data is weak near the entrance."
+    },
+    {
+      "id": "sold-out-ticket-options",
+      "heading": "What to do if tickets are sold out",
+      "tags": [
+        "sold out",
+        "tickets unavailable",
+        "backup plan",
+        "alternative attraction",
+        "hotel help",
+        "timed entry"
+      ],
+      "content": "If tickets are sold out, avoid wasting the entire day trying the same option repeatedly unless the official platform clearly releases cancellations or new inventory later. First, check whether another date, time slot, entrance, route, or ticket type is available. Then look for a nearby alternative attraction, museum, neighborhood walk, park, market, or viewpoint that fits the same area. Ask your hotel or attraction service desk whether there is an official standby process or foreign-passport booking help, but be careful with unofficial sellers or promises that sound too certain. Do not rely on screenshots or third-party claims unless the booking can be verified. A good itinerary should include one main attraction and one realistic backup nearby, especially for high-demand cities and peak travel dates."
+    },
+    {
+      "id": "booking-timing-by-major-city",
+      "heading": "How early to book in major cities",
+      "tags": [
+        "when to book",
+        "beijing",
+        "shanghai",
+        "xian",
+        "chengdu",
+        "holiday",
+        "peak season"
+      ],
+      "content": "Booking timing depends on the attraction, city, weekday, season, and holiday calendar. For major cities such as Beijing, Shanghai, Xi'an, and Chengdu, check high-demand museums, historic sites, panda bases, city landmarks, and popular scenic areas as soon as your dates are stable. Beijing and Xi'an often require extra care because many first-time itineraries depend on specific historic sites and museums. Shanghai can have timed-entry museums, observation decks, exhibitions, and popular events. Chengdu travelers should pay attention to panda-related visits and day trips. During weekends, public holidays, and school breaks, plan earlier and keep backups. Do not assume the same booking window applies to every attraction; verify each site or platform individually before locking transport and restaurant plans around it."
+    }
+  ]
+}

@@ -341,12 +341,15 @@ function getEmbeddedAssetForItem({
 }
 
 function splitItemTitle(item: string) {
-  const separatorMatch = item.match(/^([^:：\n-]{2,48})(?:[:：]| - )\s+(.+)$/);
+  const normalizedItem = cleanInlineText(item);
+  const separatorMatch = normalizedItem.match(
+    /^(.{2,72}?)(?:\s*[:：]\s+|\s+(?:-|–|—)\s+)(.+)$/,
+  );
 
   if (!separatorMatch) {
     return {
       title: null,
-      body: item,
+      body: normalizedItem,
     };
   }
 

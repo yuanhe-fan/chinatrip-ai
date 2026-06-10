@@ -42,24 +42,21 @@ export function AnswerSources({ sources }: { sources?: AnswerSource[] }) {
   }
 
   return (
-    <aside className="rounded-xl border border-sky-200/85 bg-[#F3FAFC] px-3.5 py-3 text-[#26384D] shadow-[0_8px_18px_rgba(14,116,144,0.07),0_1px_0_rgba(255,255,255,0.86)_inset]">
-      <ul className="space-y-2">
+    <aside className="rounded-xl border border-[#E6D8C7]/75 bg-[#FFFDF9] px-3 py-2.5 text-[#26384D] shadow-[0_8px_18px_rgba(20,36,58,0.05),0_1px_0_rgba(255,255,255,0.88)_inset]">
+      <ul className="space-y-1.5">
         {visibleSources.map((source) => (
           <li
             key={source.id}
-            className="min-w-0 border-t border-sky-200/70 pt-2 first:border-t-0 first:pt-0"
+            className="min-w-0 border-t border-[#E6D8C7]/65 pt-1.5 first:border-t-0 first:pt-0"
           >
-            <span className="flex flex-wrap items-center gap-1.5 text-xs font-semibold leading-5 text-slate-600">
-              <span className="inline-flex items-center rounded-full bg-sky-700 px-2 py-0.5 text-[0.68rem] font-extrabold leading-4 text-white shadow-[0_4px_10px_rgba(14,116,144,0.16)]">
+            <span className="flex flex-wrap items-center gap-1.5 text-xs font-semibold leading-5 text-[#6F6258]">
+              <span className="inline-flex items-center rounded-full bg-[linear-gradient(135deg,#8A552B,#14243A)] px-2 py-0.5 text-[0.68rem] font-extrabold leading-4 text-[#FFF8EF] shadow-[0_4px_10px_rgba(20,36,58,0.14)]">
                 Knowledge source
               </span>
               <span className="break-words [overflow-wrap:anywhere]">
                 {formatCategoryLabel(source.category)} ·{" "}
                 {formatSourceDate(source.updatedAt)}
               </span>
-            </span>
-            <span className="mt-1 block break-words text-sm font-semibold leading-5 text-[#14243A] [overflow-wrap:anywhere]">
-              {source.title}
             </span>
           </li>
         ))}

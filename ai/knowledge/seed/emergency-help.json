@@ -1,0 +1,96 @@
+{
+  "id": "emergency-help-basics-en",
+  "title": "Emergency Help Basics for Foreign Travelers in China",
+  "language": "en",
+  "category": "emergency_help",
+  "sourceType": "internal_seed",
+  "trustLevel": "product_curated",
+  "updatedAt": "2026-06-10",
+  "summary": "Practical first steps, backup contacts, and Chinese phrases for foreign travelers facing passport, phone, payment, medical, or urgent help problems in China.",
+  "sections": [
+    {
+      "id": "emergency-help-overview",
+      "heading": "Emergency help overview",
+      "tags": [
+        "emergency",
+        "lost passport",
+        "lost phone",
+        "medical help",
+        "police",
+        "hotel staff",
+        "embassy"
+      ],
+      "content": "In an emergency in China, focus first on safety, getting human help, and protecting access to identity, money, communication, and accommodation. If you are in immediate danger or need urgent medical or police help, ask nearby staff, hotel reception, station staff, police, or a trusted local person to help you contact the appropriate local emergency service. Keep your passport copy, hotel address, travel insurance, emergency contacts, embassy or consulate information, and payment backup details available offline. Hotel front desks can often help foreign travelers call local services, translate addresses, contact police stations, or find hospitals. Do not rely only on your phone or one app. If your passport, phone, or payment access is lost, treat it as both a practical travel problem and an account security problem."
+    },
+    {
+      "id": "lost-passport-first-steps",
+      "heading": "What to do if you lose your passport",
+      "tags": [
+        "lost passport",
+        "passport copy",
+        "police report",
+        "embassy",
+        "consulate",
+        "hotel help",
+        "identity"
+      ],
+      "content": "If you lose your passport, first return to the last likely location if it is safe, then ask hotel staff, attraction staff, taxi or ride-hailing support, station lost-and-found, or police for help. Keep a digital or printed passport copy ready, because it can make reporting and replacement steps easier. You may need to report the loss to local police and contact your embassy or consulate for replacement travel documents; exact procedures depend on your nationality and current location, so verify with your embassy or consulate. Useful text: 我的护照丢了。我是外国游客，需要报警并联系大使馆/领事馆。 This means: My passport is lost. I am a foreign traveler and need to report it to the police and contact my embassy or consulate. Keep your hotel informed because you may need assistance with calls, addresses, and transport."
+    },
+    {
+      "id": "lost-phone-first-steps",
+      "heading": "What to do if you lose your phone",
+      "tags": [
+        "lost phone",
+        "phone stolen",
+        "payment apps",
+        "sim",
+        "account security",
+        "hotel help",
+        "backup"
+      ],
+      "content": "If you lose your phone, protect payment, communication, and account access immediately. Use another trusted device, hotel computer, travel companion's phone, or support from your mobile carrier or bank to lock the phone, suspend SIM access if needed, and protect banking or payment apps. If the phone may have been stolen, ask hotel staff or police for help reporting it. Contact your bank or card issuer if payment apps, cards, or verification codes were accessible on the device. Useful text: 我的手机丢了，里面有支付和银行卡信息。可以帮我报警或联系酒店吗？ This means: My phone is lost and it contains payment and bank card information. Could you help me report it to police or contact my hotel? Offline backups of hotel address, passport copy, emergency contacts, and card issuer details are especially important in this situation."
+    },
+    {
+      "id": "payment-or-money-lockout-emergency",
+      "heading": "What to do if you cannot pay or access money",
+      "tags": [
+        "cannot pay",
+        "money access",
+        "payment lockout",
+        "bank card",
+        "cash",
+        "hotel front desk",
+        "emergency"
+      ],
+      "content": "If you cannot pay or access money, move to a safer and more supportive place before trying complicated fixes. A hotel front desk, airport service counter, bank branch, major mall, or staffed restaurant is usually better than a taxi, street stall, or crowded station. Try your backup payment app, a different bank card, cash, or help from a travel companion. Contact your bank if card verification, fraud controls, or app login is blocking payment. If you need immediate help, explain clearly that you are a foreign traveler with a payment problem. Useful text: 我是外国游客，现在无法付款。可以帮我联系酒店或银行吗？ This means: I am a foreign traveler and cannot pay right now. Could you help me contact my hotel or bank? Avoid handing your card, phone, or passwords to strangers."
+    },
+    {
+      "id": "medical-help-in-china",
+      "heading": "Getting medical help in China",
+      "tags": [
+        "medical help",
+        "hospital",
+        "clinic",
+        "pharmacy",
+        "travel insurance",
+        "allergy",
+        "emergency"
+      ],
+      "content": "If you need medical help in China, ask hotel staff, a trusted local contact, tour operator, or station or attraction staff to help identify a suitable hospital or clinic. For serious symptoms, injury, allergic reaction, chest pain, breathing difficulty, or any urgent condition, seek immediate local emergency help rather than waiting for online advice. Bring your passport, travel insurance details, medication list, allergy information, and a payment method. If language is difficult, use short written information: symptoms, when they started, allergies, existing conditions, and medicines you take. Useful text: 我需要看医生。我是外国游客，不会说中文。可以帮我去医院吗？ This means: I need to see a doctor. I am a foreign traveler and do not speak Chinese. Could you help me go to a hospital? Verify insurance and payment rules directly with the provider."
+    },
+    {
+      "id": "phrases-for-police-hotel-and-locals",
+      "heading": "What to say when asking police, hotel staff, or locals for help",
+      "tags": [
+        "chinese phrase",
+        "ask for help",
+        "police",
+        "hotel staff",
+        "locals",
+        "translation",
+        "emergency phrases"
+      ],
+      "content": "In urgent situations, short written Chinese phrases are more useful than long explanations. General help: 我是外国游客，需要帮助。 This means: I am a foreign traveler and need help. Police help: 请帮我报警。 This means: Please help me call the police. Hotel help: 可以帮我联系我的酒店吗？ This means: Could you help me contact my hotel? Medical help: 我身体不舒服，需要去医院。 This means: I feel unwell and need to go to a hospital. Lost item: 我的手机/护照丢了。 This means: My phone/passport is lost. If you are at a station or airport, add: 我不会说中文，可以帮我找工作人员吗？ This means: I do not speak Chinese. Could you help me find staff? Show your hotel address, passport copy, and emergency contact if safe."
+    }
+  ]
+}

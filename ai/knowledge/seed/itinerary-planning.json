@@ -1,0 +1,96 @@
+{
+  "id": "itinerary-planning-basics-en",
+  "title": "One-Day Itinerary Planning Basics for First-Time China Visitors",
+  "language": "en",
+  "category": "itinerary_planning",
+  "sourceType": "internal_seed",
+  "trustLevel": "product_curated",
+  "updatedAt": "2026-06-10",
+  "summary": "Practical one-day itinerary planning patterns for first-time visitors to Beijing, Shanghai, Chengdu, Xi'an, and custom China routes.",
+  "sections": [
+    {
+      "id": "itinerary-planning-overview",
+      "heading": "Simple one-day China itinerary planning",
+      "tags": [
+        "itinerary",
+        "one-day",
+        "first-time visitor",
+        "route planning",
+        "transport",
+        "booking",
+        "backup plan"
+      ],
+      "content": "A simple one-day China itinerary should avoid trying to see everything. Choose one primary area or anchor attraction, add one nearby secondary stop, and keep a backup plan for weather, tickets, crowds, or fatigue. Check whether the main attraction requires advance reservation, passport booking, timed entry, or a specific closed day. Build the route around realistic transport, not just map distance. Morning is usually better for high-demand sites, museums, or activities that need timed entry. Keep lunch flexible near the main area, and place shopping, riverside walks, parks, or food streets later in the day when timing is easier. For first-time travelers, a good plan includes: hotel start point, transport method, entry requirements, meal area, rest buffer, evening option, and a fallback if the main attraction is unavailable."
+    },
+    {
+      "id": "beijing-one-day-first-visitor",
+      "heading": "One-day Beijing itinerary for a first-time visitor",
+      "tags": [
+        "beijing",
+        "one-day itinerary",
+        "forbidden city",
+        "tiananmen",
+        "hutong",
+        "great wall",
+        "reservation"
+      ],
+      "content": "For a first-time Beijing day, avoid combining too many distant sights. A classic city-focused day can center on Tiananmen area, the Forbidden City, Jingshan Park, and a hutong or local neighborhood walk, but reservation and identity requirements should be checked in advance. Bring your passport if bookings use passport information. Start early because security, walking distance, and crowds can take time. If Forbidden City tickets are unavailable, switch to a backup such as Jingshan views, Beihai Park, hutong areas, temple or museum options, or a food-focused neighborhood route. The Great Wall is usually better treated as a separate day or half-to-full-day trip because transport takes time. For a one-day first visit, choose either a central historic route or a Great Wall route, not both unless you accept a rushed schedule."
+    },
+    {
+      "id": "shanghai-one-day-first-visitor",
+      "heading": "One-day Shanghai itinerary for a first-time visitor",
+      "tags": [
+        "shanghai",
+        "one-day itinerary",
+        "bund",
+        "yu garden",
+        "french concession",
+        "luziazui",
+        "metro"
+      ],
+      "content": "A first-time Shanghai one-day route works best when it balances old city, modern skyline, and walkable neighborhoods. A practical plan is to start around the Old City or Yu Garden area, continue to the Bund for river views, cross or ride to Lujiazui if you want modern skyline or observation deck options, then spend late afternoon or evening in a walkable neighborhood such as the former French Concession or a restaurant area. Check ticket and opening rules for any observation deck, museum, exhibition, or garden before committing. Shanghai metro is useful, but walking distances between exits and sights can still be significant. Keep an indoor backup for rain, heat, or poor visibility. If you only have one day, avoid adding distant theme parks, airports, or water towns unless that is the main purpose of the day."
+    },
+    {
+      "id": "chengdu-one-day-first-visitor",
+      "heading": "One-day Chengdu itinerary for a first-time visitor",
+      "tags": [
+        "chengdu",
+        "one-day itinerary",
+        "panda",
+        "teahouse",
+        "hotpot",
+        "kuanzhai alley",
+        "jinli"
+      ],
+      "content": "A first-time Chengdu day should keep a slower pace than Beijing or Shanghai. Many travelers choose a panda-related morning activity, then a relaxed afternoon with tea culture, parks, local neighborhoods, or historic shopping streets, and an evening meal such as hotpot or Sichuan dishes. If visiting a panda base, check ticketing, transport, and best viewing timing before you go, and start early because animals may be more active in the morning and crowds can build. Build in time for traffic and rest, especially if you are adjusting to jet lag. Good backup options include a teahouse, People's Park-style experience, Kuanzhai Alley, Jinli, museums, or food streets depending on your hotel location. Do not overload the day with faraway mountain or giant Buddha trips unless you treat them as separate day trips."
+    },
+    {
+      "id": "xian-one-day-first-visitor",
+      "heading": "One-day Xi'an itinerary for a first-time visitor",
+      "tags": [
+        "xian",
+        "xi'an",
+        "one-day itinerary",
+        "terracotta warriors",
+        "city wall",
+        "muslim quarter",
+        "passport booking"
+      ],
+      "content": "For a first-time Xi'an day, choose whether the Terracotta Warriors are the main anchor. If yes, plan the morning around transport to and from the site, ticket requirements, passport access, and enough time for crowds and walking. Then keep the afternoon or evening for the City Wall, Bell Tower area, Muslim Quarter, or a food-focused walk depending on energy and location. If you skip the Terracotta Warriors, a more relaxed city route can focus on the City Wall, central historic areas, museums, and local food. Check museum or attraction reservations before the day starts. Xi'an has several historic sites that sound close but still require transport and walking time, so avoid packing too many into one day. Keep a weather backup because outdoor walls and plazas can be uncomfortable in heat, rain, or poor air."
+    },
+    {
+      "id": "custom-china-travel-plan",
+      "heading": "Creating a custom China travel plan",
+      "tags": [
+        "custom itinerary",
+        "travel plan",
+        "route planning",
+        "pace",
+        "hotel location",
+        "interests",
+        "backup"
+      ],
+      "content": "A good custom China travel plan starts with constraints, not attractions. First define arrival and departure city, hotel area, travel dates, group size, mobility limits, food preferences, budget comfort level, and must-see interests. Then choose one main anchor per day and group nearby activities around it. Check booking requirements for attractions that use passport information, timed entry, or advance reservations. Avoid switching hotels or crossing the city too often, because station transfers, traffic, security checks, and walking inside large sites can take longer than expected. Add buffers after flights, high-speed trains, and major museums or scenic spots. For each day, prepare one indoor backup, one easier backup, and one food or rest option near the route. A realistic plan is usually better than a long checklist that fails when one booking or transport leg changes."
+    }
+  ]
+}

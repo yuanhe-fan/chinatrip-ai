@@ -23,6 +23,7 @@ const supportedCategories = [
   "tickets_booking",
   "language_cards",
   "emergency_help",
+  "itinerary_planning",
   "general_travel",
 ];
 
