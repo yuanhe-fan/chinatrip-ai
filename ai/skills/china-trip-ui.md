@@ -2,51 +2,79 @@
 
 ## Applies To
 
-- Home page.
-- Chat page.
-- Share page.
-- Responsive layout.
-- Sidebar and drawer.
-- Chat messages and action buttons.
+- Home, chat, and share pages.
+- AI answer Markdown rendering.
+- Streaming, failed, and truncated states.
+- Sources, visuals, copy, and share behavior.
 
-## Rules
+## Product Rules
 
-- Build the actual product experience, not a marketing-only landing page.
-- Keep the first screen focused on asking a China travel question.
-- Use a modern, practical, international travel-tool feel.
-- Avoid traditional travel agency styling.
-- Use Tailwind responsive classes for desktop and mobile.
-- Do not add decorative cards inside cards.
-- Keep cards at 8px radius or less unless there is a strong local pattern.
-- Use icons from `lucide-react` for tool buttons when useful.
+- Build the usable travel assistant, not a marketing-only page.
+- Keep the primary workflow focused on asking and acting on a China travel question.
+- Support desktop and mobile without clipping or horizontal overflow.
+- Use the existing Tailwind and Lucide patterns.
 
-## Chat Layout
+## Answer Contract
 
-Desktop:
+The default AI answer uses:
 
-- Sidebar open by default.
-- Sidebar can close and reopen.
-- Chat area expands when sidebar is closed.
+```markdown
+## Direct Answer
+## Do This
+## Watch Out
+```
 
-Mobile:
+The renderer must support:
 
-- Sidebar hidden by default.
-- Sidebar opens as a drawer.
-- Drawer closes with close button, overlay, or history selection.
-- Chat input remains usable at the bottom.
+- paragraphs and subheadings.
+- ordered and unordered lists.
+- short comparison and phrase tables.
+- multi-day `### Day N: Short Theme` sections.
+- approved embedded POI assets.
 
-## Message UI
+Do not silently depend on malformed Markdown. Prompt and Harness rules should prevent broken headings, repeated numbering, and unfinished lists.
 
-- User messages align right.
-- Assistant messages align left.
-- Assistant actions appear below the assistant answer.
-- Share / Copy must not overflow on narrow screens.
-- Long chat lists should use `@tanstack/react-virtual`.
+## Message States
+
+- `loading`: show stable progress without layout jumps.
+- `complete`: render answer, visuals, sources, and actions.
+- `failed`: show the public error and allow a safe retry path.
+- `truncated`: offer continuation without duplicating the whole answer.
+- `maybeTruncated`: preserve metadata and show continuation when appropriate.
+
+Streaming text and the final persisted answer must converge to the same visible content.
+
+## Sources And Visuals
+
+- Sources display only when present.
+- Show at most three sources.
+- Do not display raw chunk text, vector data, or similarity score.
+- Chat and share pages use the same source and visual metadata rules.
+- Images come from the approved asset registry; model-generated URLs are not trusted.
+- Copy copies answer text only.
+- Share preserves answer text, approved visuals, and sources.
 
 ## Responsive QA
 
 Check at minimum:
 
-- 390px mobile width.
-- 768px tablet width.
-- 1440px desktop width.
+- 390px mobile.
+- 768px tablet.
+- 1440px desktop.
+
+Verify:
+
+- answer headings and lists do not overflow.
+- source labels wrap.
+- image grids and previews remain usable.
+- copy/share/continue actions fit narrow screens.
+- the chat input remains usable during long answers.
+
+## Change Rule
+
+When answer parsing or rendering changes:
+
+- Confirm compatibility with the Prompt answer contract.
+- Add or update structural Harness cases.
+- Verify chat and share pages.
+- Update this Skill when a new renderer constraint becomes reusable.

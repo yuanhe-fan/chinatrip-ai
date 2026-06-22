@@ -2,7 +2,9 @@
 
 These files are project-level rules for AI-assisted development.
 
-Phase 1 uses skills as readable implementation guidance. Phase 2 can turn stable rules into deeper Codex skills or automated checklists.
+Phase 4 makes Skills part of the AI development and review workflow. The complete policy is:
+
+- [AI 开发规范与 Skills](../../docs/vibcoding/ai-development-skills.md)
 
 ## Skills
 
@@ -14,4 +16,14 @@ Phase 1 uses skills as readable implementation guidance. Phase 2 can turn stable
 
 ## Usage Rule
 
-Before implementing a feature, read the matching skill file and update it if the implementation creates a reusable project rule.
+Before implementing a feature:
+
+```text
+1. Read the relevant product and technical contracts.
+2. Read every Skill affected by the change.
+3. Add or update a Harness case when AI behavior changes.
+4. Implement and run the required checks.
+5. Update the Skill when the implementation creates a reusable rule.
+```
+
+Stable rules belong in Skills. One-off debugging notes and unverified preferences do not.

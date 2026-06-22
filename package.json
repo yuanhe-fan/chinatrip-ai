@@ -8,6 +8,10 @@
     "build": "prisma generate && next build",
     "postinstall": "prisma generate",
     "start": "next start",
+    "ai:harness": "node --conditions=react-server --import tsx ai/harness/runner/index.ts",
+    "ai:harness:smoke": "node --conditions=react-server --import tsx ai/harness/runner/index.ts --mode smoke",
+    "ai:harness:full": "node --conditions=react-server --import tsx ai/harness/runner/index.ts --mode full",
+    "ai:harness:test": "node --test --import tsx ai/harness/runner/*.test.ts",
     "lint": "eslint",
     "knowledge:ingest:dry-run": "node scripts/ingest-knowledge.mjs --dry-run",
     "knowledge:ingest": "node scripts/ingest-knowledge.mjs",
@@ -26,11 +30,13 @@
     "next": "16.2.6",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "server-only": "^0.0.1",
     "supabase": "^2.101.0",
     "zod": "^3.24.2",
     "zustand": "^5.0.3"
   },
   "devDependencies": {
+    "@next/env": "^16.2.6",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -39,6 +45,7 @@
     "eslint-config-next": "16.2.6",
     "prisma": "^6.13.0",
     "tailwindcss": "^4",
+    "tsx": "^4.22.4",
     "typescript": "^5"
   }
 }

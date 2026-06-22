@@ -7,17 +7,21 @@ It helps users ask practical questions about China travel, payments, transport, 
 ## Current Phase
 
 ```text
-Project initialization + documentation baseline
+Phase 4: AI automation engineering baseline
 ```
 
-This phase has not implemented:
+Phases 1-3 have established:
 
-- Business pages.
-- Real API routes.
-- Google login.
-- Prisma migration.
-- Real AI calls.
-- Harness runner.
+- Home, chat, share, authentication, and responsive UI flows.
+- AI provider, streaming answer, prompt profile, and usage logging.
+- Structured answer rendering and approved visual assets.
+- RAG knowledge ingestion, pgvector retrieval, and answer sources.
+
+Phase 4 focuses on:
+
+- AI evaluation Harness.
+- Prompt versioning and answer contracts.
+- AI development rules and project Skills.
 
 ## MVP Scope
 
@@ -119,6 +123,7 @@ Product:
 - [Phase 1 MVP Product Plan](docs/product/phase-1-mvp.md)
 - [Phase 2 Answer Experience Product Plan](docs/product/phase-2-answer-experience.md)
 - [Phase 3 RAG Knowledge Base Product Plan](docs/product/phase-3-rag-knowledge-base.md)
+- [Phase 4 AI Automation Engineering Plan](docs/product/phase-4-ai-automation.md)
 - [Copywriting](docs/product/copywriting.md)
 - [User Flows](docs/product/user-flows.md)
 
@@ -128,10 +133,13 @@ Technical:
 - [API Design](docs/technical/api-design.md)
 - [Database Design](docs/technical/database-design.md)
 - [Local Development](docs/technical/local-development.md)
+- [AI Evaluation Harness](docs/technical/ai-evaluation-harness.md)
+- [Prompt Version and Answer Contract](docs/technical/prompt-version-and-answer-contract.md)
 
 Vibcoding:
 
 - [Workflow](docs/vibcoding/workflow.md)
+- [AI Development Rules and Skills](docs/vibcoding/ai-development-skills.md)
 
 AI:
 
@@ -141,42 +149,38 @@ AI:
 - [Mock Chats](ai/fixtures/mock-chats.json)
 - [Harness](ai/harness/README.md)
 - [Skills](ai/skills/README.md)
+- [Prompt Versions](ai/prompts/versions/README.md)
 
-## Vibcoding Strategy
+## AI Engineering Strategy
 
-Phase 1:
+Phase 4 sequence:
 
 ```text
-Function validation first
-Reserve Vibcoding directories
-Write baseline skills
-Seed basic prompts and fixtures
-Defer full harness runner
+Harness quality baseline
+→ Prompt versions and answer contracts
+→ AI development rules and Skills
+→ Continuous quality feedback loop
 ```
 
-Phase 2:
+Development rule:
 
 ```text
-Add harness runner
-Add expected answer checks
-Add prompt versioning
-Add AI answer quality reports
-Refine skills from real development
+Read product and technical contracts
+→ Read the relevant Skill
+→ Add or update a Harness case
+→ Implement the smallest change
+→ Run evaluation
+→ Update Prompt docs and Skills
 ```
 
-## Development Order
+## Phase 4 Delivery Order
 
-Recommended next sequence:
+Recommended sequence:
 
 ```text
-1. Confirm documentation baseline.
-2. Implement Prisma schema and local migration.
-3. Implement home page.
-4. Implement chat page shell.
-5. Implement API routes with mock AI.
-6. Implement real AI Provider Service.
-7. Implement save, share, copy.
-8. Implement Google login.
-9. Add AI usage logs.
-10. Add initial harness runner in Phase 2.
+1. Establish the Phase 4 documentation baseline.
+2. Implement the Harness case schema, runner, checks, and reports.
+3. Add smoke and full evaluation cases.
+4. Map answer contracts to Harness rules.
+5. Upgrade project Skills and merge requirements.
 ```

@@ -1,0 +1,15 @@
+[
+  {
+    "id": "general-hotel-chinese-address",
+    "profile": "general_travel",
+    "language": "en",
+    "question": "What information about my hotel should I save before arriving in China?",
+    "expected": {
+      "mustMentionAny": [["Chinese address", "address in Chinese"], ["phone", "telephone"], ["booking", "reservation"]],
+      "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
+      "requiresActionSteps": true,
+      "maxWords": 400
+    },
+    "riskTags": ["general", "hotel", "arrival"]
+  }
+]

@@ -1,0 +1,56 @@
+[
+  {
+    "id": "tickets-forbidden-city-passport",
+    "profile": "tickets_booking",
+    "language": "en",
+    "question": "Do I need to book the Forbidden City in advance and use my passport?",
+    "expected": {
+      "mustMention": ["passport"],
+      "mustMentionAny": [["book", "reservation"], ["sold out", "availability", "capacity"], ["official", "verify"]],
+      "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
+      "requiresActionSteps": true,
+      "maxWords": 450
+    },
+    "riskTags": ["tickets", "forbidden_city", "passport"]
+  },
+  {
+    "id": "tickets-sold-out-alternative",
+    "profile": "tickets_booking",
+    "language": "en",
+    "question": "What should I do if a major Beijing attraction is sold out?",
+    "expected": {
+      "mustMentionAny": [["alternative", "backup"], ["official", "verify"], ["reservation", "booking"]],
+      "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
+      "requiresActionSteps": true,
+      "maxWords": 450
+    },
+    "riskTags": ["tickets", "sold_out", "alternative"]
+  },
+  {
+    "id": "tickets-closed-day",
+    "profile": "tickets_booking",
+    "language": "en",
+    "question": "How should I check for museum closed days before visiting in China?",
+    "expected": {
+      "mustMentionAny": [["official", "official channel"], ["closed", "closure"], ["backup", "alternative"]],
+      "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
+      "requiresActionSteps": true,
+      "maxWords": 400
+    },
+    "riskTags": ["tickets", "closure", "verification"]
+  },
+  {
+    "id": "tickets-passport-name",
+    "profile": "tickets_booking",
+    "language": "en",
+    "question": "What name should I enter when booking a China attraction ticket with a foreign passport?",
+    "expected": {
+      "mustMention": ["passport"],
+      "mustMentionAny": [["name", "passport name"], ["match", "same"], ["contact", "support", "staff"]],
+      "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
+      "requiresActionSteps": true,
+      "maxWords": 400
+    },
+    "riskTags": ["tickets", "passport_name", "real_name"]
+  }
+]

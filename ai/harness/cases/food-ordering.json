@@ -1,0 +1,16 @@
+[
+  {
+    "id": "food-ordering-peanut-allergy",
+    "profile": "food_ordering",
+    "language": "en",
+    "question": "How should I order food in China if I have a serious peanut allergy?",
+    "expected": {
+      "mustMentionAny": [["allergy", "allergic"], ["peanut", "花生"], ["staff", "restaurant"]],
+      "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
+      "shouldIncludeChinesePhrase": true,
+      "requiresActionSteps": true,
+      "maxWords": 450
+    },
+    "riskTags": ["food", "allergy", "communication"]
+  }
+]

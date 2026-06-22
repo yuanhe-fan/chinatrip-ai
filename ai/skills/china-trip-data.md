@@ -2,14 +2,12 @@
 
 ## Applies To
 
-- Prisma schema.
-- Database migrations.
-- Seed data.
-- Data ownership rules.
+- Prisma schema and migrations.
+- Chat, Message, SharedAnswer, and AiUsageLog data.
+- Knowledge documents, chunks, and ingestion runs.
+- AI answer and retrieval metadata.
 
-## Tables
-
-Phase 1 planned tables:
+## Current Data Areas
 
 ```text
 profiles
@@ -18,33 +16,69 @@ chats
 messages
 shared_answers
 ai_usage_logs
+knowledge_documents
+knowledge_chunks
+knowledge_ingestion_runs
 ```
 
 ## Naming Rules
 
-- Database tables use plural snake_case.
-- Database columns use snake_case.
+- Database tables and columns use snake_case.
 - TypeScript types use PascalCase.
-- API response fields use camelCase.
+- API fields use camelCase.
+- Prisma maps database names explicitly.
+
+## Message Metadata
+
+Assistant metadata may contain:
+
+- PromptProfile.
+- approved visuals.
+- sources.
+- retrieval enabled state and matched chunk diagnostics.
+- finish reason.
+- truncated and maybe-truncated state.
+- timing diagnostics.
+
+Metadata readers must validate unknown JSON and tolerate missing legacy fields.
+
+Do not store API keys, raw provider credentials, or unnecessary sensitive user data in metadata.
+
+## AI Usage Log
+
+Production generation records:
+
+- provider and model.
+- prompt version.
+- token usage when available.
+- latency.
+- success and fallback use.
+- error message for failed generation.
+- relevant generation metadata.
+
+Harness evaluation does not create usage log rows; its output belongs under `ai/harness/reports`.
+
+## Knowledge Data
+
+- `knowledge_documents` stores document identity, category, trust, status, and source update time.
+- `knowledge_chunks` stores section content, hash, tags, and vector.
+- `knowledge_ingestion_runs` records ingestion outcomes.
+- Vector queries may use raw SQL where Prisma cannot represent pgvector operations.
+- Raw chunks and similarity scores never cross the public API boundary.
 
 ## Migration Rules
 
-- Use local Docker PostgreSQL for migration development.
-- Do not run migrations directly against production during local development.
-- Review generated Prisma migrations before applying to shared environments.
+- Develop migrations against local PostgreSQL with pgvector.
+- Review generated SQL before applying it.
+- Do not alter shared or production data from local development.
+- Preserve compatibility for existing Message metadata.
+- Index changes must match expected lookup or vector query patterns.
 
-## Seed Rules
+## Validation Rule
 
-Seed data should support:
+When metadata or schema changes:
 
-- At least one anonymous chat.
-- At least one logged-in style profile placeholder.
-- A mock payment Q&A.
-- A mock shared answer.
-
-## Data Ownership
-
-- Anonymous chats belong to `anonymous_id`.
-- Logged-in chats may belong to `user_id`.
-- Share is public and does not require login in Phase 1.
-- `saved_answers` is deferred until the product has a saved answers page or a clear save retrieval flow.
+- Update API serializers/readers.
+- Update Harness metadata checks.
+- Update database and API documentation.
+- Run build and relevant AI regression cases.

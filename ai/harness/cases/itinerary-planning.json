@@ -1,0 +1,69 @@
+[
+  {
+    "id": "itinerary-beijing-one-day",
+    "profile": "itinerary_planning",
+    "language": "en",
+    "question": "Plan a one-day Beijing itinerary for a first-time visitor.",
+    "expected": {
+      "mustMentionAny": [["Morning", "morning"], ["Afternoon", "afternoon"], ["metro", "taxi", "walk"]],
+      "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
+      "requiresActionSteps": true,
+      "maxWords": 650
+    },
+    "riskTags": ["itinerary", "beijing", "one_day"]
+  },
+  {
+    "id": "itinerary-beijing-three-day",
+    "profile": "itinerary_planning",
+    "language": "en",
+    "question": "Plan a practical 3-day Beijing itinerary for a first-time foreign visitor.",
+    "expected": {
+      "mustMention": ["Day 1", "Day 2"],
+      "mustMentionAny": [["Day 3"], ["metro", "taxi", "transport"], ["book", "reservation", "passport"]],
+      "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
+      "requiresActionSteps": true,
+      "maxWords": 1000
+    },
+    "riskTags": ["itinerary", "beijing", "multi_day"]
+  },
+  {
+    "id": "itinerary-shanghai-one-day",
+    "profile": "itinerary_planning",
+    "language": "en",
+    "question": "Plan a one-day Shanghai itinerary with an efficient route.",
+    "expected": {
+      "mustMentionAny": [["Morning", "morning"], ["Afternoon", "afternoon"], ["metro", "walk", "taxi"], ["backup", "alternative"]],
+      "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
+      "requiresActionSteps": true,
+      "maxWords": 650
+    },
+    "riskTags": ["itinerary", "shanghai", "one_day"]
+  },
+  {
+    "id": "itinerary-rain-backup",
+    "profile": "itinerary_planning",
+    "language": "en",
+    "question": "Plan a one-day Beijing itinerary with a rainy-day backup.",
+    "expected": {
+      "mustMentionAny": [["rain", "indoor"], ["backup", "alternative"], ["metro", "taxi", "transport"]],
+      "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
+      "requiresActionSteps": true,
+      "maxWords": 700
+    },
+    "riskTags": ["itinerary", "weather", "backup"]
+  },
+  {
+    "id": "itinerary-slow-pace",
+    "profile": "itinerary_planning",
+    "language": "en",
+    "question": "Plan a relaxed 2-day Shanghai itinerary for an older traveler who wants less walking.",
+    "expected": {
+      "mustMention": ["Day 1", "Day 2"],
+      "mustMentionAny": [["taxi", "metro", "transport"], ["rest", "break", "slow"], ["walking", "walk"]],
+      "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
+      "requiresActionSteps": true,
+      "maxWords": 850
+    },
+    "riskTags": ["itinerary", "accessibility", "multi_day"]
+  }
+]

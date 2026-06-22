@@ -1,0 +1,54 @@
+[
+  {
+    "id": "internet-before-arrival-setup",
+    "profile": "internet_apps",
+    "language": "en",
+    "question": "Which apps and internet setup should I prepare before flying to China?",
+    "expected": {
+      "mustMentionAny": [["SIM", "eSIM", "roaming"], ["Alipay", "WeChat"], ["translation", "map", "offline"]],
+      "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
+      "requiresActionSteps": true,
+      "maxWords": 500
+    },
+    "riskTags": ["internet", "apps", "before_arrival"]
+  },
+  {
+    "id": "internet-esim-vs-roaming",
+    "profile": "internet_apps",
+    "language": "en",
+    "question": "Should I use an eSIM or international roaming for a one-week trip to China?",
+    "expected": {
+      "mustMentionAny": [["eSIM", "roaming"], ["phone number", "SMS"], ["backup", "second option"]],
+      "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
+      "requiresActionSteps": true,
+      "maxWords": 450
+    },
+    "riskTags": ["internet", "esim", "roaming"]
+  },
+  {
+    "id": "internet-sms-verification",
+    "profile": "internet_apps",
+    "language": "en",
+    "question": "How can I avoid getting locked out of travel apps because of SMS verification in China?",
+    "expected": {
+      "mustMentionAny": [["SMS", "verification"], ["roaming", "home SIM", "phone number"], ["backup", "offline"]],
+      "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
+      "requiresActionSteps": true,
+      "maxWords": 450
+    },
+    "riskTags": ["internet", "sms", "account_access"]
+  },
+  {
+    "id": "internet-offline-backup",
+    "profile": "internet_apps",
+    "language": "en",
+    "question": "What should I save offline in case my phone has no data after landing in China?",
+    "expected": {
+      "mustMentionAny": [["hotel", "address"], ["map", "offline"], ["passport", "booking", "reservation"]],
+      "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
+      "requiresActionSteps": true,
+      "maxWords": 400
+    },
+    "riskTags": ["internet", "offline", "arrival"]
+  }
+]

@@ -1,0 +1,70 @@
+[
+  {
+    "id": "transport-airport-didi-pickup",
+    "profile": "transport_workflow",
+    "language": "en",
+    "question": "How do I find my Didi pickup point at a large Chinese airport?",
+    "expected": {
+      "mustMentionAny": [["pickup", "meeting point"], ["terminal", "floor", "gate"], ["Chinese", "show"]],
+      "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
+      "shouldIncludeChinesePhrase": true,
+      "requiresActionSteps": true,
+      "maxWords": 450
+    },
+    "riskTags": ["transport", "airport", "didi"]
+  },
+  {
+    "id": "transport-high-speed-rail-first-trip",
+    "profile": "transport_workflow",
+    "language": "en",
+    "question": "Walk me through taking a high-speed train in China for the first time with a passport.",
+    "expected": {
+      "mustMention": ["passport"],
+      "mustMentionAny": [["station", "railway station"], ["security", "check"], ["gate", "boarding"]],
+      "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
+      "requiresActionSteps": true,
+      "maxWords": 550
+    },
+    "riskTags": ["transport", "rail", "passport"]
+  },
+  {
+    "id": "transport-metro-entry",
+    "profile": "transport_workflow",
+    "language": "en",
+    "question": "How can a foreign visitor enter and pay for the metro in a Chinese city?",
+    "expected": {
+      "mustMentionAny": [["metro", "subway"], ["ticket", "QR", "transport card"], ["passport", "staff", "service desk"]],
+      "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
+      "requiresActionSteps": true,
+      "maxWords": 450
+    },
+    "riskTags": ["transport", "metro", "payment"]
+  },
+  {
+    "id": "transport-taxi-address",
+    "profile": "transport_workflow",
+    "language": "en",
+    "question": "How do I make sure a taxi driver takes me to the correct hotel in China?",
+    "expected": {
+      "mustMentionAny": [["Chinese address", "address in Chinese"], ["hotel", "phone"], ["map", "pin"]],
+      "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
+      "shouldIncludeChinesePhrase": true,
+      "requiresActionSteps": true,
+      "maxWords": 400
+    },
+    "riskTags": ["transport", "taxi", "address"]
+  },
+  {
+    "id": "transport-station-transfer",
+    "profile": "transport_workflow",
+    "language": "en",
+    "question": "How much buffer and what checks should I plan when transferring between trains in China?",
+    "expected": {
+      "mustMentionAny": [["station", "train"], ["security", "ticket", "gate"], ["buffer", "time"]],
+      "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
+      "requiresActionSteps": true,
+      "maxWords": 450
+    },
+    "riskTags": ["transport", "transfer", "timing"]
+  }
+]

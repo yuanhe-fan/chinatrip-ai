@@ -1,0 +1,42 @@
+[
+  {
+    "id": "language-taxi-address-card",
+    "profile": "language_cards",
+    "language": "en",
+    "question": "Give me a short Chinese card to show a taxi driver asking them to take me to my hotel address.",
+    "expected": {
+      "mustMentionAny": [["hotel", "address"], ["请", "麻烦"]],
+      "mustNotMention": ["language lesson"],
+      "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
+      "shouldIncludeChinesePhrase": true,
+      "maxWords": 350
+    },
+    "riskTags": ["language", "taxi", "address"]
+  },
+  {
+    "id": "language-food-allergy-card",
+    "profile": "language_cards",
+    "language": "en",
+    "question": "Write a Chinese card saying I have a severe peanut allergy and asking restaurant staff to check the food.",
+    "expected": {
+      "mustMentionAny": [["allergy", "allergic"], ["花生"], ["restaurant", "staff"]],
+      "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
+      "shouldIncludeChinesePhrase": true,
+      "maxWords": 350
+    },
+    "riskTags": ["language", "allergy", "restaurant"]
+  },
+  {
+    "id": "language-hotel-checkin-card",
+    "profile": "language_cards",
+    "language": "en",
+    "question": "Give me short Chinese text to show hotel reception when checking in with a passport.",
+    "expected": {
+      "mustMentionAny": [["passport", "护照"], ["check in", "reservation", "booking"], ["请", "您好"]],
+      "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
+      "shouldIncludeChinesePhrase": true,
+      "maxWords": 350
+    },
+    "riskTags": ["language", "hotel", "checkin"]
+  }
+]

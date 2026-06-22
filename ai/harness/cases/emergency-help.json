@@ -1,0 +1,58 @@
+[
+  {
+    "id": "emergency-lost-passport",
+    "profile": "emergency_help",
+    "language": "en",
+    "question": "I lost my passport in China. What should I do right now?",
+    "expected": {
+      "mustMention": ["passport"],
+      "mustMentionAny": [["police", "report"], ["embassy", "consulate"], ["safe", "hotel"]],
+      "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
+      "shouldIncludeChinesePhrase": true,
+      "requiresActionSteps": true,
+      "maxWords": 500
+    },
+    "riskTags": ["emergency", "passport", "police"]
+  },
+  {
+    "id": "emergency-medical-help",
+    "profile": "emergency_help",
+    "language": "en",
+    "question": "I am sick in China and need medical help but do not speak Chinese.",
+    "expected": {
+      "mustMentionAny": [["hospital", "clinic"], ["hotel", "staff", "local person"], ["insurance", "passport"]],
+      "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
+      "shouldIncludeChinesePhrase": true,
+      "requiresActionSteps": true,
+      "maxWords": 500
+    },
+    "riskTags": ["emergency", "medical", "language"]
+  },
+  {
+    "id": "emergency-lost-phone",
+    "profile": "emergency_help",
+    "language": "en",
+    "question": "My phone was lost in China and it had my payment apps. What actions should I take?",
+    "expected": {
+      "mustMentionAny": [["bank", "card"], ["Alipay", "WeChat Pay", "payment"], ["password", "account", "lock"]],
+      "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
+      "requiresActionSteps": true,
+      "maxWords": 500
+    },
+    "riskTags": ["emergency", "lost_phone", "payment"]
+  },
+  {
+    "id": "emergency-stolen-bag",
+    "profile": "emergency_help",
+    "language": "en",
+    "question": "My bag was stolen in China with my cards and travel documents inside.",
+    "expected": {
+      "mustMentionAny": [["police", "report"], ["bank", "card"], ["embassy", "consulate", "passport"]],
+      "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
+      "shouldIncludeChinesePhrase": true,
+      "requiresActionSteps": true,
+      "maxWords": 500
+    },
+    "riskTags": ["emergency", "theft", "documents"]
+  }
+]

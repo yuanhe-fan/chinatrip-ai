@@ -1,0 +1,73 @@
+[
+  {
+    "id": "payment-foreign-card-setup",
+    "profile": "payment_survival",
+    "language": "en",
+    "question": "Can I use Alipay in China with a foreign Visa or Mastercard?",
+    "expected": {
+      "mustMention": ["Alipay"],
+      "mustMentionAny": [["foreign card", "international card"], ["backup", "cash", "WeChat Pay"]],
+      "mustNotMention": ["guaranteed everywhere"],
+      "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
+      "requiresActionSteps": true,
+      "requiresSourcesWhenRagEnabled": true,
+      "maxWords": 500
+    },
+    "riskTags": ["payment", "foreign_card", "arrival_setup"]
+  },
+  {
+    "id": "payment-mobile-payment-failure",
+    "profile": "payment_survival",
+    "language": "en",
+    "question": "What should I do at a restaurant if both Alipay and WeChat Pay fail?",
+    "expected": {
+      "mustMentionAny": [["cash", "card"], ["mobile data", "internet", "connection"], ["backup", "alternative"]],
+      "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
+      "shouldIncludeChinesePhrase": true,
+      "requiresActionSteps": true,
+      "maxWords": 450
+    },
+    "riskTags": ["payment", "failure_recovery", "restaurant"]
+  },
+  {
+    "id": "payment-cash-backup",
+    "profile": "payment_survival",
+    "language": "en",
+    "question": "Should I carry cash as a foreign tourist in China?",
+    "expected": {
+      "mustMention": ["cash"],
+      "mustMentionAny": [["backup", "emergency"], ["Alipay", "WeChat Pay", "mobile payment"]],
+      "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
+      "requiresActionSteps": true,
+      "maxWords": 400
+    },
+    "riskTags": ["payment", "cash", "backup"]
+  },
+  {
+    "id": "payment-hotel-deposit",
+    "profile": "payment_survival",
+    "language": "en",
+    "question": "How should I prepare to pay a hotel deposit in China without a Chinese bank card?",
+    "expected": {
+      "mustMentionAny": [["deposit", "pre-authorization", "preauthorization"], ["foreign card", "international card"], ["cash", "backup"]],
+      "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
+      "requiresActionSteps": true,
+      "maxWords": 450
+    },
+    "riskTags": ["payment", "hotel", "deposit"]
+  },
+  {
+    "id": "payment-small-shop",
+    "profile": "payment_survival",
+    "language": "en",
+    "question": "What payment options should I try at a small local shop in China?",
+    "expected": {
+      "mustMentionAny": [["Alipay", "WeChat Pay", "QR"], ["cash", "backup"], ["foreign card", "international card"]],
+      "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
+      "shouldIncludeChinesePhrase": true,
+      "requiresActionSteps": true,
+      "maxWords": 400
+    },
+    "riskTags": ["payment", "small_shop", "fallback"]
+  }
+]
