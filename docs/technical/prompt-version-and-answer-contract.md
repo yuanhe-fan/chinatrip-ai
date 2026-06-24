@@ -82,7 +82,7 @@ travel-answer-v11-unified-list-items
 
 当前版本档案见：
 
-- [travel-answer-v11-unified-list-items](../../ai/prompts/versions/travel-answer-v11-unified-list-items.md)
+- [travel-answer-v12-payment-failure-safety](../../ai/prompts/versions/travel-answer-v12-payment-failure-safety.md)
 
 ## 6. 全局回答契约
 
@@ -128,6 +128,10 @@ travel-answer-v11-unified-list-items
 - 需要提前完成的设置。
 - 外卡或移动支付可能失败的环节。
 - 至少一种备份支付方式。
+- 支付失败时先检查手机信号、mobile data、App 状态、卡限额和扫码方式。
+- 不建议游客留下护照、手机或贵重物品作为抵押。
+- 不把现金接受、政策或商户行为描述为绝对保证。
+- 除非用户明确询问，不给出精确 ATM 取款额度、手续费、汇率或现金金额。
 
 ### `internet_apps`
 

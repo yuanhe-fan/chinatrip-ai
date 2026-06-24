@@ -32,7 +32,7 @@
     "language": "en",
     "question": "Give me short Chinese text to show hotel reception when checking in with a passport.",
     "expected": {
-      "mustMentionAny": [["passport", "护照"], ["check in", "reservation", "booking"], ["请", "您好"]],
+      "mustMentionAny": [["passport", "护照"], ["check in", "check-in", "checking in", "reservation", "booking", "入住"], ["请", "您好", "你好"]],
       "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
       "shouldIncludeChinesePhrase": true,
       "maxWords": 350

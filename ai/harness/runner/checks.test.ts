@@ -41,7 +41,7 @@ function createGeneration(
     ].join("\n"),
     provider: "deepseek",
     model: "test-model",
-    promptVersion: "travel-answer-v11-unified-list-items",
+    promptVersion: "travel-answer-v12-payment-failure-safety",
     promptProfile: "payment_survival",
     inputTokens: 100,
     outputTokens: 80,
@@ -108,6 +108,118 @@ test("RAG degradation is a warning", () => {
   assert.ok(
     result.checks.some((check) => check.category === "retrieval_degraded"),
   );
+});
+
+test("live fact warning ignores practical cash denomination advice", () => {
+  const result = evaluateHarnessCase(
+    createCase({
+      expected: {
+        mustMention: ["Alipay"],
+        requiredHeadings: ["Direct Answer", "Do This", "Watch Out"],
+        requiresActionSteps: true,
+        maxWords: 300,
+      },
+    }),
+    createGeneration({
+      content: [
+        "## Direct Answer",
+        "Alipay can work in China, but keep cash as a backup.",
+        "",
+        "## Do This",
+        "1. Check network: Retry with mobile data.",
+        "2. Try card: Ask whether a foreign card works.",
+        "3. Use cash: Carry smaller notes such as ¥10, ¥20, and ¥50.",
+        "",
+        "## Watch Out",
+        "- Acceptance can vary.",
+      ].join("\n"),
+    }),
+  );
+  assert.equal(result.status, "pass");
+  assert.ok(
+    !result.checks.some(
+      (check) => check.ruleId === "content.no_live_fact_fabrication",
+    ),
+  );
+});
+
+test("live fact warning catches exact price claims", () => {
+  const result = evaluateHarnessCase(
+    createCase(),
+    createGeneration({
+      content: [
+        "## Direct Answer",
+        "Alipay can work in China, but the current ticket price is ¥60.",
+        "",
+        "## Do This",
+        "1. Set up: Add your international card.",
+        "2. Test payment: Try a small purchase.",
+        "3. Keep backup: Carry some cash.",
+        "",
+        "## Watch Out",
+        "- Acceptance can vary.",
+      ].join("\n"),
+    }),
+  );
+  assert.equal(result.status, "warning");
+  assert.ok(
+    result.checks.some(
+      (check) => check.ruleId === "content.no_live_fact_fabrication",
+    ),
+  );
+});
+
+test("live fact warning catches cash law claims", () => {
+  const result = evaluateHarnessCase(
+    createCase(),
+    createGeneration({
+      content: [
+        "## Direct Answer",
+        "Cash can help if Alipay fails, and merchants must accept cash by law.",
+        "",
+        "## Do This",
+        "1. Set up: Add your international card.",
+        "2. Test payment: Try a small purchase.",
+        "3. Keep backup: Carry some cash.",
+        "",
+        "## Watch Out",
+        "- Acceptance can vary.",
+      ].join("\n"),
+    }),
+  );
+  assert.equal(result.status, "warning");
+  assert.ok(
+    result.checks.some(
+      (check) => check.ruleId === "content.no_live_fact_fabrication",
+    ),
+  );
+});
+
+test("English word limit does not count Chinese phrase card characters", () => {
+  const content = [
+    "## Direct Answer",
+    "Alipay can work in China, but keep cash as a backup.",
+    "",
+    "## Do This",
+    "1. Check payment: Retry with mobile data.",
+    "2. Show phrase: 请问可以用现金或外国信用卡支付押金吗？谢谢。",
+    "3. Keep backup: Carry some cash.",
+    "",
+    "## Watch Out",
+    "- Acceptance can vary.",
+  ].join("\n");
+  const result = evaluateHarnessCase(
+    createCase({
+      expected: {
+        mustMention: ["Alipay"],
+        requiredHeadings: ["Direct Answer", "Do This", "Watch Out"],
+        requiresActionSteps: true,
+        maxWords: 45,
+      },
+    }),
+    createGeneration({ content }),
+  );
+  assert.equal(result.status, "pass");
 });
 
 test("truncation and invalid sources fail", () => {

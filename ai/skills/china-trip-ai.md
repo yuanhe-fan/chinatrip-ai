@@ -72,6 +72,9 @@ Never change the version constant without a version document.
 - Avoid generic travel inspiration.
 - Do not fabricate live availability, prices, opening hours, current policy, or official links.
 - Tell the traveler to verify time-sensitive details through an official channel.
+- For payment failure recovery, include a network or mobile data check before backup payment paths.
+- Never suggest leaving passports, phones, or valuables as collateral.
+- Do not cite cash-law obligations or exact payment amounts unless the user explicitly asks.
 
 ## RAG Rule
 

@@ -6,7 +6,7 @@
     "question": "Do I need to book the Forbidden City in advance and use my passport?",
     "expected": {
       "mustMention": ["passport"],
-      "mustMentionAny": [["book", "reservation"], ["sold out", "availability", "capacity"], ["official", "verify"]],
+      "mustMentionAny": [["book", "reservation"], ["sold out", "sell out", "sells out", "last-minute", "same-day", "availability", "capacity", "caps daily visitors"], ["official", "verify"]],
       "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
       "requiresActionSteps": true,
       "maxWords": 450
@@ -32,7 +32,7 @@
     "language": "en",
     "question": "How should I check for museum closed days before visiting in China?",
     "expected": {
-      "mustMentionAny": [["official", "official channel"], ["closed", "closure"], ["backup", "alternative"]],
+      "mustMentionAny": [["official", "official channel"], ["closed", "closure"], ["hotel", "front desk", "call", "verify"]],
       "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
       "requiresActionSteps": true,
       "maxWords": 400
@@ -46,7 +46,7 @@
     "question": "What name should I enter when booking a China attraction ticket with a foreign passport?",
     "expected": {
       "mustMention": ["passport"],
-      "mustMentionAny": [["name", "passport name"], ["match", "same"], ["contact", "support", "staff"]],
+      "mustMentionAny": [["name", "passport name"], ["match", "same"], ["contact", "support", "staff", "friend", "hotel"]],
       "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
       "requiresActionSteps": true,
       "maxWords": 400

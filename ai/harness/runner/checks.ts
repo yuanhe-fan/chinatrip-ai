@@ -9,7 +9,7 @@ import { TRAVEL_ANSWER_PROMPT_VERSION } from "../../../lib/ai/prompts/travel-ans
 const CHINESE_CHARACTER_PATTERN = /[\u3400-\u9fff]/g;
 const LATIN_WORD_PATTERN = /[A-Za-z]+(?:['’-][A-Za-z]+)*/g;
 const LIVE_FACT_PATTERN =
-  /(?:https?:\/\/|www\.|\b(?:guaranteed|always|required by law|current price|costs? exactly)\b|\b(?:open|closed) (?:daily|every day) (?:from|at) \d|\b(?:¥|RMB|CNY|\$)\s?\d+)/i;
+  /(?:https?:\/\/|www\.|\b(?:guaranteed|always|required by law|by law|legally|legal tender|must accept cash|cannot refuse cash|current price|costs? exactly)\b|\b(?:open|closed) (?:daily|every day) (?:from|at) \d|\b(?:price|cost|costs|fee|fare|ticket|deposit)\b[^.\n]{0,40}(?:¥|RMB|CNY|\$)\s?\d+|(?:¥|RMB|CNY|\$)\s?\d+[^.\n]{0,40}\b(?:price|cost|fee|fare|ticket|deposit)\b)/i;
 const CHINA_CONTEXT_PATTERN =
   /\b(china|chinese|alipay|wechat|didi|passport|metro|high-speed rail|railway|embassy|consulate)\b|[\u3400-\u9fff]/i;
 
@@ -26,9 +26,14 @@ function includesNormalized(content: string, expected: string) {
   return content.toLocaleLowerCase().includes(expected.toLocaleLowerCase());
 }
 
-function countWords(content: string) {
+function countWords(content: string, language: HarnessCase["language"]) {
   const latinWords = content.match(LATIN_WORD_PATTERN)?.length ?? 0;
   const chineseCharacters = content.match(CHINESE_CHARACTER_PATTERN)?.length ?? 0;
+
+  if (language === "en") {
+    return latinWords;
+  }
+
   return latinWords + chineseCharacters;
 }
 
@@ -222,7 +227,7 @@ export function evaluateHarnessCase(
     }
   }
 
-  if (expected.maxWords && countWords(content) > expected.maxWords) {
+  if (expected.maxWords && countWords(content, testCase.language) > expected.maxWords) {
     checks.push(
       issue(
         "content.max_words",

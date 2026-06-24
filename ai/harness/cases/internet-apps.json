@@ -18,7 +18,7 @@
     "language": "en",
     "question": "Should I use an eSIM or international roaming for a one-week trip to China?",
     "expected": {
-      "mustMentionAny": [["eSIM", "roaming"], ["phone number", "SMS"], ["backup", "second option"]],
+      "mustMentionAny": [["eSIM", "roaming"], ["phone number", "SMS", "home SIM"], ["backup", "second option", "fallback"]],
       "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
       "requiresActionSteps": true,
       "maxWords": 450

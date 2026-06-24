@@ -17,4 +17,8 @@
 
 当前版本：
 
+- [travel-answer-v12-payment-failure-safety](travel-answer-v12-payment-failure-safety.md)
+
+历史版本：
+
 - [travel-answer-v11-unified-list-items](travel-answer-v11-unified-list-items.md)

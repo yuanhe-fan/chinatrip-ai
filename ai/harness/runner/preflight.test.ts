@@ -6,6 +6,6 @@ import { runPreflight } from "./preflight";
 test("current Prompt version and all PromptProfiles pass preflight", async () => {
   const result = await runPreflight(await loadAllCases());
 
-  assert.equal(result.promptVersion, "travel-answer-v11-unified-list-items");
+  assert.equal(result.promptVersion, "travel-answer-v12-payment-failure-safety");
   assert.equal(result.profileCount, 9);
 });

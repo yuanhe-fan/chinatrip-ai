@@ -34,6 +34,8 @@ The renderer must support:
 
 Do not silently depend on malformed Markdown. Prompt and Harness rules should prevent broken headings, repeated numbering, and unfinished lists.
 
+Language card answers should remain compact and copyable. Avoid paragraph-length pinyin blocks that make the card hard to show or copy.
+
 ## Message States
 
 - `loading`: show stable progress without layout jumps.

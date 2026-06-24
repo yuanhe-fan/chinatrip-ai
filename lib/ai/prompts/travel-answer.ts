@@ -15,7 +15,7 @@ import {
 } from "@/lib/quick-questions/profiles";
 
 export const TRAVEL_ANSWER_PROMPT_VERSION =
-  "travel-answer-v11-unified-list-items";
+  "travel-answer-v12-payment-failure-safety";
 
 export function resolveTravelPromptProfile(input: {
   userMessage: string;

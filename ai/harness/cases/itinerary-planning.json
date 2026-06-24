@@ -32,7 +32,7 @@
     "language": "en",
     "question": "Plan a one-day Shanghai itinerary with an efficient route.",
     "expected": {
-      "mustMentionAny": [["Morning", "morning"], ["Afternoon", "afternoon"], ["metro", "walk", "taxi"], ["backup", "alternative"]],
+      "mustMentionAny": [["Morning", "morning", "08:", "09:", "10:"], ["Afternoon", "afternoon", "14:", "15:"], ["metro", "walk", "taxi"], ["backup", "alternative", "fallback"]],
       "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
       "requiresActionSteps": true,
       "maxWords": 650

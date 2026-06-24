@@ -3,7 +3,7 @@
 ## 状态
 
 ```text
-active
+superseded
 ```
 
 ## 目标
@@ -60,4 +60,4 @@ active
 
 ## 发布结论
 
-当前为生产代码声明的有效版本。Harness runner、32 条 full case 和 12 条 smoke case 已接入；真实模型基线以本地报告为准。
+已被 `travel-answer-v12-payment-failure-safety` 取代。Harness runner、32 条 full case 和 12 条 smoke case 已接入；真实模型基线以本地报告为准。

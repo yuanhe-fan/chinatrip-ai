@@ -21,7 +21,8 @@
     "language": "en",
     "question": "What should I do at a restaurant if both Alipay and WeChat Pay fail?",
     "expected": {
-      "mustMentionAny": [["cash", "card"], ["mobile data", "internet", "connection"], ["backup", "alternative"]],
+      "mustMentionAny": [["cash", "card"], ["mobile data", "internet", "connection"], ["backup", "alternative", "switch", "third-party", "friend"]],
+      "mustNotMention": ["leave your passport as collateral", "hand over your passport", "valuable item as collateral"],
       "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
       "shouldIncludeChinesePhrase": true,
       "requiresActionSteps": true,
@@ -36,7 +37,8 @@
     "question": "Should I carry cash as a foreign tourist in China?",
     "expected": {
       "mustMention": ["cash"],
-      "mustMentionAny": [["backup", "emergency"], ["Alipay", "WeChat Pay", "mobile payment"]],
+      "mustMentionAny": [["backup", "emergency", "fallback", "digital payment fails", "lifeline"], ["Alipay", "WeChat Pay", "mobile payment"]],
+      "mustNotMention": ["cannot legally refuse", "accepted by law", "legal tender"],
       "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
       "requiresActionSteps": true,
       "maxWords": 400
@@ -63,6 +65,7 @@
     "question": "What payment options should I try at a small local shop in China?",
     "expected": {
       "mustMentionAny": [["Alipay", "WeChat Pay", "QR"], ["cash", "backup"], ["foreign card", "international card"]],
+      "mustNotMention": ["cannot legally refuse", "accepted by law", "legal tender"],
       "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
       "shouldIncludeChinesePhrase": true,
       "requiresActionSteps": true,

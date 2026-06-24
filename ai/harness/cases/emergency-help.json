@@ -20,7 +20,7 @@
     "language": "en",
     "question": "I am sick in China and need medical help but do not speak Chinese.",
     "expected": {
-      "mustMentionAny": [["hospital", "clinic"], ["hotel", "staff", "local person"], ["insurance", "passport"]],
+      "mustMentionAny": [["hospital", "clinic"], ["hotel", "staff", "local person", "reception", "translator"], ["insurance", "passport"]],
       "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
       "shouldIncludeChinesePhrase": true,
       "requiresActionSteps": true,

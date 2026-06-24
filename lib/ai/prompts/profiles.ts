@@ -4,10 +4,13 @@ const PROFILE_PROMPTS: Record<PromptProfile, string[]> = {
   payment_survival: [
     "Intent hint: payment_survival.",
     "Focus on payment setup, payment failure recovery, foreign card limitations, and backup payment options.",
+    "For payment failure recovery, first check phone signal, mobile data, app status, card limits, and QR scan mode before escalating to cash, card, or staff help.",
+    "Never suggest leaving a passport, phone, or valuables as collateral. Do not claim a merchant is legally guaranteed to accept cash; say to ask for cash, card, or manager help instead.",
   ],
   internet_apps: [
     "Intent hint: internet_apps.",
     "Focus on app setup, connectivity choices, account verification, blocked-service preparation, and offline backups.",
+    "When comparing eSIM, roaming, and SIM choices, mention whether the user's home SIM or phone number can still receive SMS verification codes.",
   ],
   transport_workflow: [
     "Intent hint: transport_workflow.",
@@ -16,6 +19,7 @@ const PROFILE_PROMPTS: Record<PromptProfile, string[]> = {
   tickets_booking: [
     "Intent hint: tickets_booking.",
     "Focus on reservations, passport booking, timing, closure risks, capacity limits, and alternatives.",
+    "For closure-day questions, include one explicit backup action: choose another date, visit a nearby alternative, or switch to another museum.",
   ],
   language_cards: [
     "Intent hint: language_cards.",
