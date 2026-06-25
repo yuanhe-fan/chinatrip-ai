@@ -1077,7 +1077,7 @@ function ClarificationFlowPanel({
                         }
                         className={`flex min-h-11 items-center gap-3 rounded-xl border px-3.5 py-2.5 text-left text-sm font-semibold shadow-[0_8px_18px_rgba(20,36,58,0.06)] transition duration-200 focus-visible:ring-2 focus-visible:ring-[#D49A52]/40 ${
                           selected
-                            ? "border-[#8A552B] bg-[linear-gradient(135deg,#8A552B,#14243A)] text-[#FFF8EF] shadow-[0_12px_26px_rgba(20,36,58,0.16)] hover:-translate-y-0.5 hover:brightness-110 hover:shadow-[0_16px_32px_rgba(20,36,58,0.20)]"
+                            ? "border-[#D49A52] bg-white/76 text-[#172033] shadow-[0_10px_22px_rgba(20,36,58,0.08)] ring-1 ring-[#D49A52]/35 hover:-translate-y-0.5 hover:border-[#C78335] hover:shadow-[0_14px_28px_rgba(20,36,58,0.11)]"
                             : "border-[#E6D8C7] bg-white/76 text-[#26384D] hover:-translate-y-0.5 hover:border-[#D49A52] hover:bg-[#FFF8EF] hover:text-[#14243A] hover:shadow-[0_16px_32px_rgba(20,36,58,0.14)]"
                         }`}
                       >
@@ -1086,7 +1086,7 @@ function ClarificationFlowPanel({
                             isMultiChoice ? "rounded-md" : "rounded-full"
                           } ${
                             selected
-                              ? "border-[#FFF8EF] bg-[#FFF8EF] text-[#8A552B]"
+                              ? "border-[#D49A52] bg-white text-[#8A552B] shadow-[0_3px_8px_rgba(138,85,43,0.12)]"
                               : "border-[#D9C7B3] bg-white/72 text-transparent"
                           }`}
                           aria-hidden="true"
