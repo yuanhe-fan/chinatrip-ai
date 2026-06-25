@@ -29,6 +29,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   AlertTriangle,
   ArrowRight,
+  CalendarClock,
   Check,
   CirclePlus,
   Copy,
@@ -627,6 +628,20 @@ function mergeClarifiedTripContext(
       continue;
     }
 
+    if (/arrival|arrive|抵达|到达/i.test(question.id + question.title)) {
+      context.arrivalTime = Array.isArray(normalizedAnswer)
+        ? normalizedAnswer.join(", ")
+        : normalizedAnswer;
+      continue;
+    }
+
+    if (/departure|depart|leave|leaving|离开|返程/i.test(question.id + question.title)) {
+      context.departureTime = Array.isArray(normalizedAnswer)
+        ? normalizedAnswer.join(", ")
+        : normalizedAnswer;
+      continue;
+    }
+
     if (/traveler|people|companion|同行|老人|kid|family/i.test(question.id + question.title)) {
       context.travelers = Array.isArray(normalizedAnswer)
         ? normalizedAnswer.join(", ")
@@ -680,6 +695,104 @@ function mergeClarifiedTripContext(
   };
 }
 
+function hasCjkText(value: string) {
+  return /[\u3400-\u9FFF]/.test(value);
+}
+
+function formatDateTimeAnswer(value: string, language: "en" | "zh") {
+  const match = value.match(
+    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/,
+  );
+
+  if (!match) {
+    return value;
+  }
+
+  const [, year, month, day, hour, minute] = match;
+
+  if (language === "zh") {
+    return `${year}年${month}月${day}日 ${hour}:${minute}`;
+  }
+
+  const date = new Date(Number(year), Number(month) - 1, Number(day));
+  const monthLabel = new Intl.DateTimeFormat("en", { month: "short" }).format(
+    date,
+  );
+
+  return `${monthLabel} ${Number(day)}, ${year}, ${hour}:${minute}`;
+}
+
+function DateTimeAnswerInput({
+  value,
+  questionTitle,
+  sourceQuestion,
+  onChange,
+}: {
+  value: string;
+  questionTitle: string;
+  sourceQuestion: string;
+  onChange: (value: string) => void;
+}) {
+  const language =
+    hasCjkText(questionTitle) || hasCjkText(sourceQuestion) ? "zh" : "en";
+  const placeholder =
+    language === "zh" ? "选择日期和时间" : "Select date and time";
+  const displayValue = value
+    ? formatDateTimeAnswer(value, language)
+    : placeholder;
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function openPicker() {
+    const input = inputRef.current;
+
+    if (!input) {
+      return;
+    }
+
+    input.focus();
+    input.showPicker?.();
+  }
+
+  function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+
+    event.preventDefault();
+    openPicker();
+  }
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={openPicker}
+      onKeyDown={handleKeyDown}
+      className="group relative flex min-h-12 w-full cursor-pointer items-center gap-3 overflow-hidden rounded-2xl border border-[#E6D8C7] bg-white/82 px-4 text-left text-sm shadow-[0_8px_18px_rgba(20,36,58,0.06),0_1px_0_rgba(255,255,255,0.9)_inset] ring-1 ring-[#E6D8C7]/45 transition duration-200 hover:-translate-y-0.5 hover:border-[#D49A52] hover:bg-[#FFF8EF] hover:shadow-[0_16px_32px_rgba(20,36,58,0.12)] focus-visible:border-[#D49A52] focus-visible:ring-2 focus-visible:ring-[#D49A52]/25"
+    >
+      <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[#E6D8C7] bg-[#FFF8EF] text-[#8A552B] shadow-[0_6px_14px_rgba(20,36,58,0.06)] transition group-hover:border-[#D49A52]">
+        <CalendarClock className="h-4 w-4" />
+      </span>
+      <span
+        className={`min-w-0 flex-1 truncate font-semibold ${
+          value ? "text-[#172033]" : "text-[#8E9AB0]"
+        }`}
+      >
+        {displayValue}
+      </span>
+      <input
+        ref={inputRef}
+        type="datetime-local"
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        aria-label={placeholder}
+        tabIndex={-1}
+        className="pointer-events-none absolute inset-0 h-full w-full opacity-0"
+      />
+    </div>
+  );
+}
+
 function ClarificationFlowPanel({
   flow,
   isGenerating,
@@ -703,6 +816,7 @@ function ClarificationFlowPanel({
 }) {
   const question = flow.flow.questions[flow.currentStepIndex];
   const isLastStep = flow.currentStepIndex >= flow.flow.questions.length - 1;
+  const isFirstStep = flow.currentStepIndex === 0;
   const answer = question ? flow.answers[question.id] : undefined;
   const otherAnswer = question ? flow.otherAnswers[question.id] ?? "" : "";
   const hasAnswer = Boolean(
@@ -718,12 +832,27 @@ function ClarificationFlowPanel({
 
   function toggleMultiChoice(value: string) {
     const current = Array.isArray(answer) ? answer : [];
+
+    if (isFirstStep && !isLastStep) {
+      onAnswer(question.id, [value]);
+      onNext();
+      return;
+    }
+
     onAnswer(
       question.id,
       current.includes(value)
         ? current.filter((item) => item !== value)
         : [...current, value],
     );
+  }
+
+  function handleDateTimeChange(value: string) {
+    onAnswer(question.id, value);
+
+    if (value && !isLastStep) {
+      onNext();
+    }
   }
 
   function handleTextKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
@@ -773,7 +902,14 @@ function ClarificationFlowPanel({
               </p>
             ) : null}
 
-            {question.type === "text" ? (
+            {question.type === "date_time" ? (
+              <DateTimeAnswerInput
+                value={typeof answer === "string" ? answer : ""}
+                questionTitle={question.title}
+                sourceQuestion={flow.sourceQuestion}
+                onChange={handleDateTimeChange}
+              />
+            ) : question.type === "text" ? (
               <textarea
                 value={typeof answer === "string" ? answer : ""}
                 onChange={(event) => onAnswer(question.id, event.target.value)}

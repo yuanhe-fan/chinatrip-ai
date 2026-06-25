@@ -77,7 +77,11 @@ type ClarificationAnswerMetadata = {
 ## 4. 共享类型
 
 ```ts
-type ClarificationQuestionType = "single_choice" | "multi_choice" | "text";
+type ClarificationQuestionType =
+  | "single_choice"
+  | "multi_choice"
+  | "text"
+  | "date_time";
 
 type ClarificationOption = {
   label: string;
@@ -123,7 +127,7 @@ type ClarificationFlow = {
 
 - `questions` 最多 6 个。
 - `single_choice` 和 `multi_choice` 必须有 2 至 8 个选项，除非 `allowOther` 为 true。
-- `text` 不需要 options。
+- `text` 和 `date_time` 不需要 options。
 - 无法通过 schema 校验时使用兜底问题。
 
 ## 5. Clarification API
@@ -262,6 +266,7 @@ type ActiveClarificationFlow = {
 - `single_choice`：单选按钮组。
 - `multi_choice`：多选按钮组。
 - `text`：短文本输入。
+- `date_time`：主题化输入区包裹原生 `datetime-local`，提交值仍为浏览器原始字符串。
 - `allowOther`：展开自定义输入。
 - `Back`：返回上一题。
 - `Next`：进入下一题。
@@ -273,6 +278,10 @@ UI 要求：
 - 一次只展示一个问题。
 - 移动端不横向溢出。
 - 必填题未完成时禁用 `Next` 或 `Generate itinerary`。
+- `date_time` 空态 placeholder 跟随问题语言：中文显示“选择日期和时间”，英文显示“Select date and time”。
+- `date_time` 点击整个输入区域都应通过标准 `showPicker()` 渐进增强打开原生控件；不支持时退回 focus。
+- 第一题完成有效回答后自动进入第二题：`single_choice`、第一题 `multi_choice`、`date_time` 自动推进；`text` 通过 Enter 或 Next 推进。
+- 非第一题 `multi_choice` 仍保留 Next，避免多选时误跳。
 - 澄清流存在时不阻塞普通聊天历史渲染。
 
 ## 9. 异常与降级

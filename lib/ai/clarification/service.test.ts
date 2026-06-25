@@ -34,6 +34,28 @@ test("clarification schema accepts a valid flow", () => {
   assert.equal(result.success, true);
 });
 
+test("clarification schema accepts date_time questions", () => {
+  const result = clarificationFlowSchema.safeParse({
+    intent: "itinerary_planning",
+    needsClarification: true,
+    reason: "Missing arrival time.",
+    extractedContext: {
+      destination: "Beijing",
+      days: 1,
+    },
+    questions: [
+      {
+        id: "arrival_time",
+        title: "When will you arrive?",
+        type: "date_time",
+        required: true,
+      },
+    ],
+  });
+
+  assert.equal(result.success, true);
+});
+
 test("clarification schema rejects unsupported choice questions without options", () => {
   const result = clarificationFlowSchema.safeParse({
     intent: "itinerary_planning",
@@ -155,6 +177,22 @@ test("fallback asks only for missing days when destination is known", () => {
 
   assert.equal(flow.needsClarification, true);
   assert.equal(flow.questions[0]?.id, "days");
+});
+
+test("fallback asks date_time questions when destination and days are known", () => {
+  const flow = createFallbackClarificationFlow({
+    destination: "Chengdu",
+    days: 1,
+  });
+
+  assert.equal(flow.needsClarification, true);
+  assert.deepEqual(
+    flow.questions.map((question) => [question.id, question.type]),
+    [
+      ["arrival_time", "date_time"],
+      ["departure_time", "date_time"],
+    ],
+  );
 });
 
 test("fallback asks for destination and days only when both are missing", () => {

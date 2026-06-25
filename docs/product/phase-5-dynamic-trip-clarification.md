@@ -242,7 +242,7 @@ type ClarificationQuestion = {
   id: string;
   title: string;
   description?: string;
-  type: "single_choice" | "multi_choice" | "text";
+  type: "single_choice" | "multi_choice" | "text" | "date_time";
   required: boolean;
   options?: Array<{
     label: string;

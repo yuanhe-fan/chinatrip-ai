@@ -7,6 +7,7 @@ export const clarificationQuestionTypeSchema = z.enum([
   "single_choice",
   "multi_choice",
   "text",
+  "date_time",
 ]);
 
 export const clarificationOptionSchema = z.object({
@@ -48,7 +49,7 @@ export const clarificationQuestionSchema = z
     allowOther: z.boolean().optional(),
   })
   .superRefine((question, context) => {
-    if (question.type === "text") {
+    if (question.type === "text" || question.type === "date_time") {
       return;
     }
 
@@ -128,14 +129,27 @@ export function createFallbackClarificationFlow(
       required: true,
     });
   } else if (!extractedContext.arrivalTime || !extractedContext.departureTime) {
-    questions.push({
-      id: "arrival_departure_time",
-      title: "What time do you arrive and leave that day?",
-      description:
-        "Approximate times are enough. This helps avoid a route that is too rushed.",
-      type: "text",
-      required: true,
-    });
+    if (!extractedContext.arrivalTime) {
+      questions.push({
+        id: "arrival_time",
+        title: "When will you arrive?",
+        description:
+          "Choose the date and time you expect to start the itinerary.",
+        type: "date_time",
+        required: true,
+      });
+    }
+
+    if (!extractedContext.departureTime) {
+      questions.push({
+        id: "departure_time",
+        title: "When will you leave?",
+        description:
+          "Choose the date and time you need the itinerary to end.",
+        type: "date_time",
+        required: true,
+      });
+    }
   } else if (!extractedContext.travelers) {
     questions.push({
       id: "travelers",
