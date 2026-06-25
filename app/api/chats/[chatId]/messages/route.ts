@@ -15,6 +15,7 @@ import {
   isUniqueSequenceError,
   isUuid,
   prepareMessageGeneration,
+  resolveMessageGenerationMetadata,
   resolveQuickSubQuestionMetadata,
   serializeAssistantMessage,
   serializeUserMessage,
@@ -94,7 +95,10 @@ export async function POST(request: Request, context: RouteContext) {
       chatId,
       identity,
       message,
-      metadata: quickSubQuestionMetadata.metadata,
+      metadata: resolveMessageGenerationMetadata(
+        body,
+        quickSubQuestionMetadata.metadata,
+      ),
     });
 
     if ("chatNotFound" in prepared) {

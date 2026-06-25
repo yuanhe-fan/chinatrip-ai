@@ -9,7 +9,12 @@ import {
   readAnswerVisuals,
   readQuickQuestionMenu,
 } from "@/lib/messages/metadata";
+import {
+  parseClarifiedTripContext,
+  type ClarifiedTripContext,
+} from "@/lib/ai/clarification/schema";
 import { findQuickSubQuestion } from "@/lib/quick-questions/menus";
+import { isPromptProfile } from "@/lib/quick-questions/profiles";
 import { prisma } from "@/lib/prisma";
 import type { TravelAnswerMessage } from "@/lib/ai/types";
 
@@ -173,9 +178,7 @@ export function resolveQuickSubQuestionMetadata(
   message: string,
 ) {
   const hasQuickSubQuestionFields =
-    "sourceQuestionId" in body ||
-    "sourceSubQuestionId" in body ||
-    "promptProfile" in body;
+    "sourceQuestionId" in body || "sourceSubQuestionId" in body;
 
   if (!hasQuickSubQuestionFields) {
     return {
@@ -208,6 +211,52 @@ export function resolveQuickSubQuestionMetadata(
       sourceSubQuestionId: match.subQuestion.id,
     } satisfies Prisma.InputJsonValue,
   };
+}
+
+function createClarificationMetadata(body: Record<string, unknown>):
+  | {
+      clarificationUsed: true;
+      clarifiedTripContext: ClarifiedTripContext;
+    }
+  | undefined {
+  if (body.clarificationUsed !== true) {
+    return undefined;
+  }
+
+  const parsedContext = parseClarifiedTripContext(body.clarifiedTripContext);
+
+  if (!parsedContext.success) {
+    return undefined;
+  }
+
+  return {
+    clarificationUsed: true,
+    clarifiedTripContext: parsedContext.data,
+  };
+}
+
+export function resolveMessageGenerationMetadata(
+  body: Record<string, unknown>,
+  quickSubQuestionMetadata?: Prisma.InputJsonValue,
+) {
+  const clarificationMetadata = createClarificationMetadata(body);
+  const promptProfile = isPromptProfile(body.promptProfile)
+    ? body.promptProfile
+    : undefined;
+
+  if (!quickSubQuestionMetadata && !clarificationMetadata && !promptProfile) {
+    return undefined;
+  }
+
+  return {
+    ...(quickSubQuestionMetadata &&
+    typeof quickSubQuestionMetadata === "object" &&
+    !Array.isArray(quickSubQuestionMetadata)
+      ? quickSubQuestionMetadata
+      : {}),
+    ...(promptProfile ? { promptProfile } : {}),
+    ...(clarificationMetadata ?? {}),
+  } satisfies Prisma.InputJsonValue;
 }
 
 function getIdentityType(identity: CurrentIdentity): ChatOwnerMissDiagnostics["identityType"] {
@@ -366,6 +415,26 @@ export function prepareMessageGeneration({
       };
     }
 
+    const sourceUserMessage =
+      metadata && typeof metadata === "object" && !Array.isArray(metadata)
+        ? toChatMessageRecord(
+            await tx.message.update({
+              where: {
+                id: lastMessage.id,
+              },
+              data: {
+                metadata: {
+                  ...(lastMessage.metadata &&
+                  typeof lastMessage.metadata === "object" &&
+                  !Array.isArray(lastMessage.metadata)
+                    ? lastMessage.metadata
+                    : {}),
+                  ...metadata,
+                },
+              },
+            }),
+          )
+        : lastMessage;
     const assistantMessage = toChatMessageRecord(
       await tx.message.create({
         data: {
@@ -380,7 +449,7 @@ export function prepareMessageGeneration({
 
     return {
       chat,
-      userMessage: lastMessage,
+      userMessage: sourceUserMessage,
       assistantMessage,
       history: toTravelHistory(existingMessages.slice(0, -1)),
     };

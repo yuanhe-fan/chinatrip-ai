@@ -1,5 +1,10 @@
 import type { PromptProfile } from "@/lib/quick-questions/profiles";
 import type { QuickSubQuestion } from "@/lib/quick-questions/menus";
+import type {
+  ClarificationFlow,
+  ClarificationQuestion,
+  ClarifiedTripContext,
+} from "@/lib/ai/clarification/schema";
 
 export type AnswerVisuals = {
   heroAssetId?: string;
@@ -105,6 +110,8 @@ export type SendMessageRequest = {
   promptProfile?: PromptProfile;
   sourceQuestionId?: string;
   sourceSubQuestionId?: string;
+  clarificationUsed?: boolean;
+  clarifiedTripContext?: ClarifiedTripContext;
 };
 
 export type SendMessageResponse = {
@@ -228,6 +235,21 @@ export type CreateChatFromShareRequest = {
 };
 
 export type CreateChatFromShareResponse = CreateChatResponse;
+
+export type {
+  ClarificationFlow,
+  ClarificationQuestion,
+  ClarifiedTripContext,
+};
+
+export type CreateClarificationRequest = {
+  messageId?: string;
+  message?: string;
+  language?: "en" | "zh";
+  promptProfile?: PromptProfile;
+};
+
+export type CreateClarificationResponse = ClarificationFlow;
 
 export type MeResponse = {
   user: {

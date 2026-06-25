@@ -1,4 +1,8 @@
 import type { AnswerSource, AnswerVisuals } from "@/lib/api/types";
+import type {
+  ClarificationFlow,
+  ClarifiedTripContext,
+} from "@/lib/ai/clarification/schema";
 import type { PromptProfile } from "@/lib/quick-questions/profiles";
 import type { QuickSubQuestion } from "@/lib/quick-questions/menus";
 
@@ -23,6 +27,21 @@ export type ChatMessage = {
   finishReason?: string | null;
   progress?: number;
   loadingLabel?: string;
+};
+
+export type ActiveClarificationFlow = {
+  sourceUserMessageId?: string;
+  optimisticUserMessageId?: string;
+  sourceQuestion: string;
+  flow: ClarificationFlow;
+  currentStepIndex: number;
+  answers: Record<string, string | string[]>;
+  otherAnswers: Record<string, string>;
+};
+
+export type ClarificationSubmission = {
+  sourceQuestion: string;
+  context: ClarifiedTripContext;
 };
 
 export type MockChat = {

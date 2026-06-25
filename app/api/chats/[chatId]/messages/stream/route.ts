@@ -14,6 +14,7 @@ import {
   isUniqueSequenceError,
   isUuid,
   prepareMessageGeneration,
+  resolveMessageGenerationMetadata,
   resolveQuickSubQuestionMetadata,
   serializeAssistantMessage,
   serializePendingAssistantMessage,
@@ -175,7 +176,10 @@ export async function POST(request: Request, context: RouteContext) {
       chatId,
       identity,
       message,
-      metadata: quickSubQuestionMetadata.metadata,
+      metadata: resolveMessageGenerationMetadata(
+        body,
+        quickSubQuestionMetadata.metadata,
+      ),
     });
   } catch (error) {
     if (isUniqueSequenceError(error)) {

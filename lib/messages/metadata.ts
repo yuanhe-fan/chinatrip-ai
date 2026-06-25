@@ -1,4 +1,8 @@
 import type { AnswerSource, AnswerVisuals } from "@/lib/api/types";
+import {
+  parseClarifiedTripContext,
+  type ClarifiedTripContext,
+} from "@/lib/ai/clarification/schema";
 import { isPromptProfile } from "@/lib/quick-questions/profiles";
 import { findQuickQuestionById } from "@/lib/quick-questions/questions";
 import { getQuickQuestionMenu } from "@/lib/quick-questions/menus";
@@ -140,6 +144,38 @@ export function readAnswerCompletionStatus(metadata: unknown): {
 
 export function createGenerationMetadata(metadata: unknown) {
   const promptProfile = readPromptProfile(metadata);
+  const clarificationMetadata = readClarificationGenerationMetadata(metadata);
 
-  return promptProfile ? { promptProfile } : undefined;
+  if (!promptProfile && !clarificationMetadata) {
+    return undefined;
+  }
+
+  return {
+    ...(promptProfile ? { promptProfile } : {}),
+    ...(clarificationMetadata ?? {}),
+  };
+}
+
+export function readClarificationGenerationMetadata(metadata: unknown):
+  | {
+      clarificationUsed: true;
+      clarifiedTripContext: ClarifiedTripContext;
+    }
+  | undefined {
+  if (!isRecord(metadata) || metadata.clarificationUsed !== true) {
+    return undefined;
+  }
+
+  const parsedContext = parseClarifiedTripContext(
+    metadata.clarifiedTripContext,
+  );
+
+  if (!parsedContext.success) {
+    return undefined;
+  }
+
+  return {
+    clarificationUsed: true,
+    clarifiedTripContext: parsedContext.data,
+  };
 }

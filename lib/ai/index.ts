@@ -12,6 +12,10 @@ import {
   buildTravelAnswerMessages,
   resolveTravelPromptProfile,
 } from "./prompts/travel-answer";
+import {
+  parseClarifiedTripContext,
+  type ClarifiedTripContext,
+} from "./clarification/schema";
 import { deepseekProvider } from "./providers/deepseek";
 import { doubaoProvider } from "./providers/doubao";
 import { mockProvider } from "./providers/mock";
@@ -28,6 +32,35 @@ const PROVIDERS: Record<AiProvider, AiProviderAdapter> = {
   doubao: doubaoProvider,
   deepseek: deepseekProvider,
 };
+
+function getClarificationMetadata(metadata: unknown):
+  | {
+      clarificationUsed: true;
+      clarifiedTripContext: ClarifiedTripContext;
+    }
+  | Record<string, never> {
+  if (
+    typeof metadata !== "object" ||
+    metadata === null ||
+    !("clarificationUsed" in metadata) ||
+    (metadata as Record<string, unknown>).clarificationUsed !== true
+  ) {
+    return {};
+  }
+
+  const parsedContext = parseClarifiedTripContext(
+    (metadata as Record<string, unknown>).clarifiedTripContext,
+  );
+
+  if (!parsedContext.success) {
+    return {};
+  }
+
+  return {
+    clarificationUsed: true,
+    clarifiedTripContext: parsedContext.data,
+  };
+}
 
 export async function generateTravelAnswer(
   input: GenerateTravelAnswerInput,
@@ -66,6 +99,7 @@ export async function generateTravelAnswer(
         ? result.metadata
         : {}),
       promptProfile,
+      ...getClarificationMetadata(input.metadata),
       visuals: selectAnswerVisuals({
         profile: promptProfile,
         question: input.userMessage,
@@ -120,6 +154,7 @@ export async function* streamTravelAnswer(
                 ? chunk.result.metadata
                 : {}),
               promptProfile,
+              ...getClarificationMetadata(input.metadata),
               visuals: selectAnswerVisuals({
                 profile: promptProfile,
                 question: input.userMessage,
@@ -145,6 +180,7 @@ export async function* streamTravelAnswer(
         ? rawResult.metadata
         : {}),
       promptProfile,
+      ...getClarificationMetadata(input.metadata),
       visuals: selectAnswerVisuals({
         profile: promptProfile,
         question: input.userMessage,

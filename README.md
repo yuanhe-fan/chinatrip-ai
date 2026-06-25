@@ -124,6 +124,7 @@ Product:
 - [Phase 2 Answer Experience Product Plan](docs/product/phase-2-answer-experience.md)
 - [Phase 3 RAG Knowledge Base Product Plan](docs/product/phase-3-rag-knowledge-base.md)
 - [Phase 4 AI Automation Engineering Plan](docs/product/phase-4-ai-automation.md)
+- [Phase 5 Dynamic Trip Clarification Flow](docs/product/phase-5-dynamic-trip-clarification.md)
 - [Copywriting](docs/product/copywriting.md)
 - [User Flows](docs/product/user-flows.md)
 
@@ -135,6 +136,7 @@ Technical:
 - [Local Development](docs/technical/local-development.md)
 - [AI Evaluation Harness](docs/technical/ai-evaluation-harness.md)
 - [Prompt Version and Answer Contract](docs/technical/prompt-version-and-answer-contract.md)
+- [Dynamic Trip Clarification Flow](docs/technical/dynamic-trip-clarification-flow.md)
 
 Vibcoding:
 

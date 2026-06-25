@@ -13,6 +13,7 @@ import {
   ChatDetailResponse,
   ChatHistoryItem,
   ChatHistoryResponse,
+  CreateClarificationResponse,
   CreateSharedAnswerResponse,
   LogoutResponse,
   MeResponse,
@@ -44,6 +45,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ComponentType,
+  KeyboardEvent,
   MouseEvent,
   SVGProps,
   useEffect,
@@ -53,6 +55,8 @@ import {
 import {
   ChatMessage,
   MockChat,
+  ActiveClarificationFlow,
+  ClarificationSubmission,
   createChatTitle,
   createMessage,
 } from "./mock-chat";
@@ -571,6 +575,286 @@ function QuickQuestionMenuPanel({
   );
 }
 
+function isItineraryPlanningRequest(value: string) {
+  const normalized = value.toLowerCase();
+
+  return (
+    /\b(itinerary|plan a trip|travel plan|trip plan|route|schedule|day trip|one-day|1-day|2-day|3-day|4-day|5-day|five-day|hours in)\b/.test(
+      normalized,
+    ) ||
+    /(行程|旅游计划|旅行计划|几日游|日游|攻略|路线安排|制定.*游|北京.*游|上海.*游|成都.*游|西安.*游|中国.*游)/.test(
+      value,
+    )
+  );
+}
+
+function mergeClarifiedTripContext(
+  flow: ActiveClarificationFlow,
+): ClarificationSubmission {
+  const context = { ...flow.flow.extractedContext };
+
+  for (const question of flow.flow.questions) {
+    const answer = flow.answers[question.id];
+    const otherAnswer = flow.otherAnswers[question.id]?.trim();
+    const normalizedAnswer = Array.isArray(answer)
+      ? [...answer, ...(otherAnswer ? [otherAnswer] : [])]
+      : otherAnswer || answer;
+
+    if (!normalizedAnswer || (Array.isArray(normalizedAnswer) && normalizedAnswer.length === 0)) {
+      continue;
+    }
+
+    if (/city|destination|where/i.test(question.id + question.title)) {
+      context.destination = Array.isArray(normalizedAnswer)
+        ? normalizedAnswer.join(", ")
+        : normalizedAnswer;
+      continue;
+    }
+
+    if (/day|duration|how many/i.test(question.id + question.title)) {
+      const rawValue = Array.isArray(normalizedAnswer)
+        ? normalizedAnswer[0]
+        : normalizedAnswer;
+      const dayMatch = rawValue.match(/\d+/);
+
+      if (dayMatch) {
+        context.days = Number(dayMatch[0]);
+      } else {
+        context.notes = [context.notes, `Days: ${rawValue}`]
+          .filter(Boolean)
+          .join("\n");
+      }
+      continue;
+    }
+
+    if (/traveler|people|companion|同行|老人|kid|family/i.test(question.id + question.title)) {
+      context.travelers = Array.isArray(normalizedAnswer)
+        ? normalizedAnswer.join(", ")
+        : normalizedAnswer;
+      continue;
+    }
+
+    if (/pace|speed|relaxed|节奏|walking|walk/i.test(question.id + question.title)) {
+      context.pace = Array.isArray(normalizedAnswer)
+        ? normalizedAnswer.join(", ")
+        : normalizedAnswer;
+      continue;
+    }
+
+    if (/budget|cost|预算/i.test(question.id + question.title)) {
+      context.budget = Array.isArray(normalizedAnswer)
+        ? normalizedAnswer.join(", ")
+        : normalizedAnswer;
+      continue;
+    }
+
+    if (/interest|like|prefer|兴趣|museum|food|history|shopping/i.test(question.id + question.title)) {
+      context.interests = Array.isArray(normalizedAnswer)
+        ? normalizedAnswer
+        : [normalizedAnswer];
+      continue;
+    }
+
+    if (/diet|food|allergy|spicy|halal|vegetarian|饮食|忌口|过敏/i.test(question.id + question.title)) {
+      context.dietaryNeeds = Array.isArray(normalizedAnswer)
+        ? normalizedAnswer
+        : [normalizedAnswer];
+      continue;
+    }
+
+    context.notes = [
+      context.notes,
+      `${question.title}: ${
+        Array.isArray(normalizedAnswer)
+          ? normalizedAnswer.join(", ")
+          : normalizedAnswer
+      }`,
+    ]
+      .filter(Boolean)
+      .join("\n");
+  }
+
+  return {
+    sourceQuestion: flow.sourceQuestion,
+    context,
+  };
+}
+
+function ClarificationFlowPanel({
+  flow,
+  isGenerating,
+  onAnswer,
+  onAnswerAndAdvance,
+  onOtherAnswer,
+  onBack,
+  onNext,
+  onCancel,
+  onGenerate,
+}: {
+  flow: ActiveClarificationFlow;
+  isGenerating: boolean;
+  onAnswer: (questionId: string, value: string | string[]) => void;
+  onAnswerAndAdvance: (questionId: string, value: string) => void;
+  onOtherAnswer: (questionId: string, value: string) => void;
+  onBack: () => void;
+  onNext: () => void;
+  onCancel: () => void;
+  onGenerate: () => void;
+}) {
+  const question = flow.flow.questions[flow.currentStepIndex];
+  const isLastStep = flow.currentStepIndex >= flow.flow.questions.length - 1;
+  const answer = question ? flow.answers[question.id] : undefined;
+  const otherAnswer = question ? flow.otherAnswers[question.id] ?? "" : "";
+  const hasAnswer = Boolean(
+    question &&
+      (!question.required ||
+        (Array.isArray(answer) ? answer.length > 0 : answer) ||
+        otherAnswer.trim()),
+  );
+
+  if (!question) {
+    return null;
+  }
+
+  function toggleMultiChoice(value: string) {
+    const current = Array.isArray(answer) ? answer : [];
+    onAnswer(
+      question.id,
+      current.includes(value)
+        ? current.filter((item) => item !== value)
+        : [...current, value],
+    );
+  }
+
+  function handleTextKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (
+      event.key !== "Enter" ||
+      event.shiftKey ||
+      event.metaKey ||
+      event.ctrlKey
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (!hasAnswer || isGenerating) {
+      return;
+    }
+
+    if (!isLastStep) {
+      onNext();
+    }
+  }
+
+  return (
+    <div className="mx-auto w-full max-w-[52rem] pb-8">
+      <div className="flex items-start gap-0 sm:gap-3">
+        <BotBadge className="hidden sm:mt-1 sm:flex sm:h-10 sm:w-10" />
+        <article className={`relative w-full overflow-hidden rounded-[1.25rem] rounded-tl-sm p-5 text-[0.94rem] leading-7 text-[#26384D] sm:p-7 ${ASSISTANT_SURFACE_CLASS}`}>
+          <div className="relative z-10 space-y-5">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-[#8A552B]">
+                  Trip setup
+                </p>
+                <h2 className="mt-1 text-lg font-extrabold leading-snug text-[#172033]">
+                  {question.title}
+                </h2>
+              </div>
+              <span className="shrink-0 rounded-full border border-[#E6D8C7] bg-[#FFF8EF] px-3 py-1 text-xs font-bold text-[#8A552B]">
+                {flow.currentStepIndex + 1}/{flow.flow.questions.length}
+              </span>
+            </div>
+
+            {question.description ? (
+              <p className="text-sm font-medium leading-6 text-[#74685C]">
+                {question.description}
+              </p>
+            ) : null}
+
+            {question.type === "text" ? (
+              <textarea
+                value={typeof answer === "string" ? answer : ""}
+                onChange={(event) => onAnswer(question.id, event.target.value)}
+                onKeyDown={handleTextKeyDown}
+                className="min-h-24 w-full resize-none rounded-2xl border border-[#E6D8C7] bg-white/80 px-4 py-3 text-sm font-medium text-[#172033] outline-none shadow-[0_8px_18px_rgba(20,36,58,0.06)] transition focus:border-[#D49A52] focus:ring-2 focus:ring-[#D49A52]/25"
+                placeholder="Type your answer..."
+              />
+            ) : (
+              <div className="grid gap-2 sm:grid-cols-2">
+                {question.options?.map((option) => {
+                  const selected =
+                    question.type === "multi_choice"
+                      ? Array.isArray(answer) && answer.includes(option.value)
+                      : answer === option.value;
+
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() =>
+                        question.type === "multi_choice"
+                          ? toggleMultiChoice(option.value)
+                          : onAnswerAndAdvance(question.id, option.value)
+                      }
+                      className={`min-h-11 rounded-xl border px-3.5 py-2.5 text-left text-sm font-semibold shadow-[0_8px_18px_rgba(20,36,58,0.06)] transition duration-200 focus-visible:ring-2 focus-visible:ring-[#D49A52]/40 ${
+                        selected
+                          ? "border-[#8A552B] bg-[linear-gradient(135deg,#8A552B,#14243A)] text-[#FFF8EF] shadow-[0_12px_26px_rgba(20,36,58,0.16)] hover:-translate-y-0.5 hover:brightness-110 hover:shadow-[0_16px_32px_rgba(20,36,58,0.20)]"
+                          : "border-[#E6D8C7] bg-white/76 text-[#26384D] hover:-translate-y-0.5 hover:border-[#D49A52] hover:bg-[#FFF8EF] hover:text-[#14243A] hover:shadow-[0_16px_32px_rgba(20,36,58,0.14)]"
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {question.allowOther ? (
+              <input
+                value={otherAnswer}
+                onChange={(event) => onOtherAnswer(question.id, event.target.value)}
+                className="h-11 w-full rounded-xl border border-[#E6D8C7] bg-white/80 px-4 text-sm font-medium text-[#172033] outline-none focus:border-[#D49A52] focus:ring-2 focus:ring-[#D49A52]/25"
+                placeholder="Other..."
+              />
+            ) : null}
+
+            <div className="flex flex-col gap-2 border-t border-[#E6D8C7]/70 pt-4 sm:flex-row sm:items-center sm:justify-between">
+              <button
+                type="button"
+                onClick={onCancel}
+                disabled={isGenerating}
+                className="h-10 rounded-xl border border-[#E6D8C7] bg-white/60 px-4 text-sm font-bold text-[#74685C] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={onBack}
+                  disabled={flow.currentStepIndex === 0 || isGenerating}
+                  className="h-10 rounded-xl border border-[#E6D8C7] bg-white/60 px-4 text-sm font-bold text-[#74685C] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  Back
+                </button>
+                <button
+                  type="button"
+                  onClick={isLastStep ? onGenerate : onNext}
+                  disabled={!hasAnswer || isGenerating}
+                  className="h-10 rounded-xl bg-[linear-gradient(135deg,#8A552B,#14243A)] px-4 text-sm font-bold text-[#FFF8EF] shadow-[0_10px_22px_rgba(20,36,58,0.12)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-55"
+                >
+                  {isLastStep ? "Generate itinerary" : "Next"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+  );
+}
+
 function AssistantMessageBubble({
   status,
   content,
@@ -942,6 +1226,9 @@ export function ChatView({ chatId }: { chatId: string }) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [message, setMessage] = useState("");
   const [sharingMessageId, setSharingMessageId] = useState<string | null>(null);
+  const [activeClarificationFlow, setActiveClarificationFlow] =
+    useState<ActiveClarificationFlow | null>(null);
+  const [isLoadingClarification, setIsLoadingClarification] = useState(false);
   const [previewState, setPreviewState] = useState<ImagePreviewState | null>(
     null,
   );
@@ -1665,6 +1952,8 @@ export function ChatView({ chatId }: { chatId: string }) {
     setChatError(null);
     clearGenerationTimers();
     setIsGenerating(false);
+    setActiveClarificationFlow(null);
+    setIsLoadingClarification(false);
     hasInitialScrolledRef.current = false;
 
     if (cachedChat) {
@@ -1756,25 +2045,19 @@ export function ChatView({ chatId }: { chatId: string }) {
     }
 
     lastCompletedDetailReasonRef.current = null;
-    const loadingMessage: ChatMessage = {
-      id: `assistant-initial-loading-${chat.id}`,
-      role: "assistant",
-      content: "",
-      createdAt: new Date().toISOString(),
-      status: "loading",
-      progress: 1,
-    };
 
-    updateChatAndCache((currentChat) => ({
-      ...currentChat,
-      messages: [...currentChat.messages, loadingMessage],
-    }));
-    forceScrollToBottomAfterMessageInsert();
-    void sendMessageToApi({
-      targetChatId: chat.id,
-      requestBody: {},
-      loadingMessageId: loadingMessage.id,
-    });
+    if (isItineraryPlanningRequest(firstUserMessage.content)) {
+      void startClarificationFlow({
+        targetChatId: chat.id,
+        sourceQuestion: firstUserMessage.content,
+        sourceUserMessageId: firstUserMessage.id,
+        promptProfile: "itinerary_planning",
+        generateDirectlyOnSkip: true,
+      });
+      return;
+    }
+
+    startInitialAnswerGeneration();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chat, chatError, isGenerating, isLoadingChatDetail]);
 
@@ -1820,8 +2103,48 @@ export function ChatView({ chatId }: { chatId: string }) {
       return;
     }
 
+    if (
+      metadata?.promptProfile === "itinerary_planning" ||
+      isItineraryPlanningRequest(trimmedMessage)
+    ) {
+      const optimisticUserMessage = createMessage("user", trimmedMessage);
+
+      updateChatAndCache((currentChat) => ({
+        ...currentChat,
+        messages: [...currentChat.messages, optimisticUserMessage],
+      }));
+      void startClarificationFlow({
+        targetChatId: chat.id,
+        sourceQuestion: trimmedMessage,
+        optimisticUserMessageId: optimisticUserMessage.id,
+        promptProfile: metadata?.promptProfile ?? "itinerary_planning",
+        generateDirectlyOnSkip: false,
+      });
+      setMessage((currentMessage) =>
+        currentMessage.trim() === trimmedMessage ? "" : currentMessage,
+      );
+      return;
+    }
+
+    submitMessageDirect(trimmedMessage, metadata);
+  }
+
+  function submitMessageDirect(
+    trimmedMessage: string,
+    metadata?: Pick<
+      SendMessageRequest,
+      "promptProfile" | "sourceQuestionId" | "sourceSubQuestionId"
+    >,
+    existingOptimisticUserMessageId?: string,
+  ) {
+    if (!chat) {
+      return;
+    }
+
     const loadingMessageId = `assistant-loading-${Date.now()}`;
-    const userMessage = createMessage("user", trimmedMessage);
+    const userMessage = existingOptimisticUserMessageId
+      ? null
+      : createMessage("user", trimmedMessage);
     const loadingMessage: ChatMessage = {
       id: loadingMessageId,
       role: "assistant",
@@ -1837,7 +2160,11 @@ export function ChatView({ chatId }: { chatId: string }) {
         currentChat.messages.length === 0
           ? createChatTitle(trimmedMessage)
           : currentChat.title,
-      messages: [...currentChat.messages, userMessage, loadingMessage],
+      messages: [
+        ...currentChat.messages,
+        ...(userMessage ? [userMessage] : []),
+        loadingMessage,
+      ],
     }));
     setMessage((currentMessage) =>
       currentMessage.trim() === trimmedMessage ? "" : currentMessage,
@@ -1850,7 +2177,8 @@ export function ChatView({ chatId }: { chatId: string }) {
         ...metadata,
       },
       loadingMessageId,
-      optimisticUserMessageId: userMessage.id,
+      optimisticUserMessageId:
+        existingOptimisticUserMessageId ?? userMessage?.id,
     });
   }
 
@@ -1870,6 +2198,239 @@ export function ChatView({ chatId }: { chatId: string }) {
       promptProfile: subQuestion.promptProfile,
       sourceQuestionId: menu.sourceQuestionId,
       sourceSubQuestionId: subQuestion.id,
+    });
+  }
+
+  function startInitialAnswerGeneration() {
+    if (!chat) {
+      return;
+    }
+
+    const loadingMessage: ChatMessage = {
+      id: `assistant-initial-loading-${chat.id}`,
+      role: "assistant",
+      content: "",
+      createdAt: new Date().toISOString(),
+      status: "loading",
+      progress: 1,
+    };
+
+    updateChatAndCache((currentChat) => ({
+      ...currentChat,
+      messages: [...currentChat.messages, loadingMessage],
+    }));
+    forceScrollToBottomAfterMessageInsert();
+    void sendMessageToApi({
+      targetChatId: chat.id,
+      requestBody: {},
+      loadingMessageId: loadingMessage.id,
+    });
+  }
+
+  async function startClarificationFlow({
+    targetChatId,
+    sourceQuestion,
+    sourceUserMessageId,
+    optimisticUserMessageId,
+    promptProfile,
+    generateDirectlyOnSkip,
+  }: {
+    targetChatId: string;
+    sourceQuestion: string;
+    sourceUserMessageId?: string;
+    optimisticUserMessageId?: string;
+    promptProfile?: SendMessageRequest["promptProfile"];
+    generateDirectlyOnSkip: boolean;
+  }) {
+    if (isLoadingClarification || isGenerating) {
+      return;
+    }
+
+    setIsLoadingClarification(true);
+
+    try {
+      const response = await apiFetch<CreateClarificationResponse>(
+        `/chats/${targetChatId}/clarifications`,
+        {
+          messageId: sourceUserMessageId,
+          message: sourceQuestion,
+          promptProfile,
+        },
+      );
+
+      if (!response.needsClarification || response.questions.length === 0) {
+        if (generateDirectlyOnSkip) {
+          startInitialAnswerGeneration();
+        } else {
+          submitMessageDirect(sourceQuestion, { promptProfile }, optimisticUserMessageId);
+        }
+        return;
+      }
+
+      setActiveClarificationFlow({
+        sourceUserMessageId,
+        optimisticUserMessageId,
+        sourceQuestion,
+        flow: response,
+        currentStepIndex: 0,
+        answers: {},
+        otherAnswers: {},
+      });
+      forceScrollToBottomAfterMessageInsert();
+    } catch {
+      if (generateDirectlyOnSkip) {
+        startInitialAnswerGeneration();
+      } else {
+        submitMessageDirect(sourceQuestion, { promptProfile }, optimisticUserMessageId);
+      }
+    } finally {
+      setIsLoadingClarification(false);
+    }
+  }
+
+  function handleClarificationAnswer(
+    questionId: string,
+    value: string | string[],
+  ) {
+    setActiveClarificationFlow((current) =>
+      current
+        ? {
+            ...current,
+            answers: {
+              ...current.answers,
+              [questionId]: value,
+            },
+          }
+        : current,
+    );
+  }
+
+  function handleClarificationAnswerAndAdvance(
+    questionId: string,
+    value: string,
+  ) {
+    setActiveClarificationFlow((current) => {
+      if (!current) {
+        return current;
+      }
+
+      const currentIndex = current.currentStepIndex;
+      const isLastStep = currentIndex >= current.flow.questions.length - 1;
+
+      return {
+        ...current,
+        answers: {
+          ...current.answers,
+          [questionId]: value,
+        },
+        currentStepIndex: isLastStep
+          ? currentIndex
+          : Math.min(current.flow.questions.length - 1, currentIndex + 1),
+      };
+    });
+  }
+
+  function handleClarificationOtherAnswer(questionId: string, value: string) {
+    setActiveClarificationFlow((current) =>
+      current
+        ? {
+            ...current,
+            otherAnswers: {
+              ...current.otherAnswers,
+              [questionId]: value,
+            },
+          }
+        : current,
+    );
+  }
+
+  function handleClarificationBack() {
+    setActiveClarificationFlow((current) =>
+      current
+        ? {
+            ...current,
+            currentStepIndex: Math.max(0, current.currentStepIndex - 1),
+          }
+        : current,
+    );
+  }
+
+  function handleClarificationNext() {
+    setActiveClarificationFlow((current) =>
+      current
+        ? {
+            ...current,
+            currentStepIndex: Math.min(
+              current.flow.questions.length - 1,
+              current.currentStepIndex + 1,
+            ),
+          }
+        : current,
+    );
+  }
+
+  function handleClarificationCancel() {
+    const optimisticUserMessageId =
+      activeClarificationFlow?.optimisticUserMessageId;
+
+    setActiveClarificationFlow(null);
+
+    if (optimisticUserMessageId) {
+      updateChatAndCache((currentChat) => ({
+        ...currentChat,
+        messages: currentChat.messages.filter(
+          (chatMessage) => chatMessage.id !== optimisticUserMessageId,
+        ),
+      }));
+    }
+  }
+
+  function handleClarificationGenerate() {
+    if (!activeClarificationFlow || !chat || isGenerating) {
+      return;
+    }
+
+    const submission = mergeClarifiedTripContext(activeClarificationFlow);
+    const loadingMessageId = `assistant-loading-${Date.now()}`;
+    const shouldPersistSourceQuestion = !activeClarificationFlow.sourceUserMessageId;
+    const optimisticUserMessageId =
+      activeClarificationFlow.optimisticUserMessageId;
+    const userMessage =
+      shouldPersistSourceQuestion && !optimisticUserMessageId
+        ? createMessage("user", submission.sourceQuestion)
+        : null;
+    const loadingMessage: ChatMessage = {
+      id: loadingMessageId,
+      role: "assistant",
+      content: "",
+      createdAt: new Date().toISOString(),
+      status: "loading",
+      progress: 1,
+    };
+    const messagesToAppend: ChatMessage[] = userMessage
+      ? [userMessage, loadingMessage]
+      : [loadingMessage];
+
+    setActiveClarificationFlow(null);
+    updateChatAndCache((currentChat) => ({
+      ...currentChat,
+      messages: [...currentChat.messages, ...messagesToAppend],
+    }));
+    forceScrollToBottomAfterMessageInsert();
+    void sendMessageToApi({
+      targetChatId: chat.id,
+      requestBody: {
+        ...(shouldPersistSourceQuestion
+          ? { message: submission.sourceQuestion }
+          : {}),
+        promptProfile: "itinerary_planning",
+        clarificationUsed: true,
+        clarifiedTripContext: submission.context,
+      },
+      loadingMessageId,
+      optimisticUserMessageId: shouldPersistSourceQuestion
+        ? optimisticUserMessageId ?? userMessage?.id
+        : undefined,
     });
   }
 
@@ -2083,41 +2644,70 @@ export function ChatView({ chatId }: { chatId: string }) {
                 {chatError}
               </div>
             ) : (
-              <div
-                className="relative mx-auto w-full max-w-[52rem]"
-                style={{ height: rowVirtualizer.getTotalSize() }}
-              >
-                {rowVirtualizer.getVirtualItems().map((virtualItem) => {
-                  const chatMessage = chat?.messages[virtualItem.index];
+              <>
+                <div
+                  className="relative mx-auto w-full max-w-[52rem]"
+                  style={{ height: rowVirtualizer.getTotalSize() }}
+                >
+                  {rowVirtualizer.getVirtualItems().map((virtualItem) => {
+                    const chatMessage = chat?.messages[virtualItem.index];
 
-                  if (!chatMessage) {
-                    return null;
-                  }
+                    if (!chatMessage) {
+                      return null;
+                    }
 
-                  return (
-                    <div
-                      key={virtualItem.key}
-                      ref={rowVirtualizer.measureElement}
-                      data-index={virtualItem.index}
-                      className="absolute left-0 top-0 w-full pb-8"
-                      style={{
-                        transform: `translateY(${virtualItem.start}px)`,
-                      }}
-                    >
-                      <MessageItem
-                        message={chatMessage}
-                        user={user}
-                        onCopy={handleCopy}
-                        onShare={handleShare}
-                        onContinueAnswer={handleContinueTruncatedAnswer}
-                        onQuickSubQuestion={handleQuickSubQuestion}
-                        onOpenImage={handleOpenImagePreview}
-                        sharingMessageId={sharingMessageId}
-                      />
+                    return (
+                      <div
+                        key={virtualItem.key}
+                        ref={rowVirtualizer.measureElement}
+                        data-index={virtualItem.index}
+                        className="absolute left-0 top-0 w-full pb-8"
+                        style={{
+                          transform: `translateY(${virtualItem.start}px)`,
+                        }}
+                      >
+                        <MessageItem
+                          message={chatMessage}
+                          user={user}
+                          onCopy={handleCopy}
+                          onShare={handleShare}
+                          onContinueAnswer={handleContinueTruncatedAnswer}
+                          onQuickSubQuestion={handleQuickSubQuestion}
+                          onOpenImage={handleOpenImagePreview}
+                          sharingMessageId={sharingMessageId}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+                {isLoadingClarification ? (
+                  <div className="mx-auto w-full max-w-[52rem] pb-8">
+                    <div className="flex items-start gap-0 sm:gap-3">
+                      <BotBadge className="hidden sm:mt-1 sm:flex sm:h-10 sm:w-10" />
+                      <div className={`w-full rounded-[1.25rem] rounded-tl-sm p-5 sm:p-7 ${ASSISTANT_SURFACE_CLASS}`}>
+                        <div className="space-y-3">
+                          <div className="h-3 w-40 animate-pulse rounded-full bg-[#D49A52]/45" />
+                          <div className="h-3 w-full animate-pulse rounded-full bg-[#E6D8C7]" />
+                          <div className="h-3 w-2/3 animate-pulse rounded-full bg-[#EEF4F6]" />
+                        </div>
+                      </div>
                     </div>
-                  );
-                })}
-              </div>
+                  </div>
+                ) : null}
+                {activeClarificationFlow ? (
+                  <ClarificationFlowPanel
+                    flow={activeClarificationFlow}
+                    isGenerating={isGenerating}
+                    onAnswer={handleClarificationAnswer}
+                    onAnswerAndAdvance={handleClarificationAnswerAndAdvance}
+                    onOtherAnswer={handleClarificationOtherAnswer}
+                    onBack={handleClarificationBack}
+                    onNext={handleClarificationNext}
+                    onCancel={handleClarificationCancel}
+                    onGenerate={handleClarificationGenerate}
+                  />
+                ) : null}
+              </>
             )}
           </div>
 
@@ -2132,13 +2722,16 @@ export function ChatView({ chatId }: { chatId: string }) {
                     ? "Preparing conversation..."
                     : isGenerating
                     ? "Please wait..."
+                    : activeClarificationFlow
+                    ? "Finish the trip setup above..."
                     : "Ask about your China trip..."
                 }
                 disabled={
                   isLoadingChatDetail ||
                   isLoadingUser ||
                   Boolean(chatError) ||
-                  isGenerating
+                  isGenerating ||
+                  Boolean(activeClarificationFlow)
                 }
               />
 
