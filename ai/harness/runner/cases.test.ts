@@ -7,7 +7,7 @@ test("loads all cases and validates smoke references", async () => {
   const cases = await loadAllCases();
   const smokeIds = await loadSmokeCaseIds(cases);
 
-  assert.equal(cases.length, 32);
+  assert.equal(cases.length, 33);
   assert.equal(smokeIds.length, 12);
   assert.equal(new Set(cases.map((item) => item.profile)).size, 9);
 });

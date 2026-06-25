@@ -40,6 +40,7 @@ export function ChatInput({
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault();
+
       if (canSubmit) {
         onSubmit();
       }
@@ -48,6 +49,7 @@ export function ChatInput({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
     if (canSubmit) {
       onSubmit();
     }

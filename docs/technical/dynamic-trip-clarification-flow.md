@@ -9,7 +9,7 @@
 ```text
 AI 生成澄清问题
 → 前端临时展示与收集答案
-→ 用户确认执行
+→ 用户完成最后一道题
 → 一次性提交最终上下文
 → 正式 AI 回答链路生成行程
 ```
@@ -26,7 +26,7 @@ POST /api/chats
 → POST /api/chats/:chatId/clarifications
 → 返回临时 ClarificationFlow
 → 前端本地完成选择、返回、修改、取消
-→ 用户点击 Generate itinerary
+→ 最后一道题完成后直接执行
 → POST /api/chats/:chatId/messages/stream
 → 写入执行用 user message 和 pending assistant message
 → streamTravelAnswer 结合 clarifiedTripContext 生成正式答案
@@ -129,6 +129,7 @@ type ClarificationFlow = {
 - `single_choice` 和 `multi_choice` 必须有 2 至 8 个选项，除非 `allowOther` 为 true。
 - `text` 和 `date_time` 不需要 options。
 - 无法通过 schema 校验时使用兜底问题。
+- `China` / `中国` 只表示国家范围，不写入具体 `destination`；当只有国家范围和天数时，兜底问题必须优先补齐城市或城市组合、兴趣主题、同行人和节奏，不应只问城市，也不应先问抵达/离开时间。
 
 ## 5. Clarification API
 
@@ -176,11 +177,8 @@ INTERNAL_ERROR
 
 降级：
 
-- Provider 失败、JSON 解析失败或 schema 失败时，返回兜底问题：
-
-```text
-To build a better itinerary, which city and how many days should I plan for?
-```
+- Provider 失败、JSON 解析失败或 schema 失败时，返回上下文感知兜底问题。
+- 兜底问题基于已抽取的 `ClarifiedTripContext` 生成，不重复询问已知城市、天数、同行、节奏、住宿区域、兴趣或饮食限制。
 
 ## 6. AI Clarification 服务
 
@@ -226,7 +224,7 @@ type SendMessageRequest = {
 };
 ```
 
-点击 `Generate itinerary` 时，前端调用现有：
+最后一道澄清题完成时，前端调用现有：
 
 ```text
 POST /api/chats/:chatId/messages/stream
@@ -266,22 +264,24 @@ type ActiveClarificationFlow = {
 - `single_choice`：单选按钮组。
 - `multi_choice`：多选按钮组。
 - `text`：短文本输入。
-- `date_time`：主题化输入区包裹原生 `datetime-local`，提交值仍为浏览器原始字符串。
+- `date_time`：主题化输入区打开 DayPicker 日期选择弹层，弹层内部完成确认/取消，提交值为 `YYYY-MM-DD`。
 - `allowOther`：展开自定义输入。
 - `Back`：返回上一题。
 - `Next`：进入下一题。
 - `Cancel`：清空本地 state。
-- `Generate itinerary`：合成 `ClarifiedTripContext` 并调用正式生成。
+- `Generate itinerary`：仅在最后一道多选或文本题按钮中出现，合成 `ClarifiedTripContext` 并调用正式生成。
 
 UI 要求：
 
 - 一次只展示一个问题。
 - 移动端不横向溢出。
-- 必填题未完成时禁用 `Next` 或 `Generate itinerary`。
-- `date_time` 空态 placeholder 跟随问题语言：中文显示“选择日期和时间”，英文显示“Select date and time”。
-- `date_time` 点击整个输入区域都应通过标准 `showPicker()` 渐进增强打开原生控件；不支持时退回 focus。
-- 第一题完成有效回答后自动进入第二题：`single_choice`、第一题 `multi_choice`、`date_time` 自动推进；`text` 通过 Enter 或 Next 推进。
+- 必填题未完成时禁用 `Next` 或最后一步的 `Generate itinerary`。
+- `date_time` 空态 placeholder 跟随问题语言：中文显示“选择日期”，英文显示“Select date”。
+- `date_time` 点击整个输入区域打开 DayPicker 日期选择弹层，不依赖浏览器原生 picker。
+- `date_time` 弹层内部提供 `Cancel` / `Confirm` 或 `取消` / `确定`；取消只关闭弹层不提交，确认后写入 `YYYY-MM-DD`，非最后一题进入下一题，最后一题直接生成。
+- 第一题完成有效回答后自动进入第二题：`single_choice`、第一题 `multi_choice`、`date_time` 点击确认后推进；`text` 通过 Enter 或 Next 推进。
 - 非第一题 `multi_choice` 仍保留 Next，避免多选时误跳。
+- 最后一题完成后不进入摘要页，直接调用正式生成链路。
 - 澄清流存在时不阻塞普通聊天历史渲染。
 
 ## 9. 异常与降级
@@ -303,12 +303,15 @@ UI 要求：
 - schema 拒绝非法题型、空选项、超出 6 个问题。
 - service 能从 markdown code fence 中提取 JSON。
 - service 在非法输出时返回兜底问题。
+- service 能抽取城市、天数、同行、节奏、住宿区域、兴趣、饮食限制和少步行需求等已知上下文。
+- service 会过滤 AI 对已知字段的重复追问。
 - metadata 能传递 `clarificationUsed` 和 `clarifiedTripContext`。
 
 UI 验收：
 
 - `帮我制定北京五日游` 触发澄清流。
 - 用户可以选择、返回修改、取消、最终执行。
+- 完成全部问题后直接生成，不展示 `Trip setup` 摘要页。
 - 信息足够的问题可以跳过澄清直接生成。
 - 移动端问题卡片不溢出。
 

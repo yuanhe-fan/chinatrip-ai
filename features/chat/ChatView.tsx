@@ -25,6 +25,8 @@ import {
   getPoiAssetGroup,
   type AnswerAsset,
 } from "@/lib/answer-assets/registry";
+import { DayPicker, type ClassNames } from "@daypicker/react";
+import { zhCN } from "@daypicker/react/locale/zh-CN";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   AlertTriangle,
@@ -699,19 +701,43 @@ function hasCjkText(value: string) {
   return /[\u3400-\u9FFF]/.test(value);
 }
 
-function formatDateTimeAnswer(value: string, language: "en" | "zh") {
-  const match = value.match(
-    /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/,
-  );
+const COMPACT_DAY_PICKER_CLASS_NAMES: Partial<ClassNames> = {
+  root: "relative w-full",
+  months: "flex justify-center",
+  month: "w-full",
+  month_caption: "mb-2 flex h-8 items-center justify-center text-sm font-extrabold text-[#26384D]",
+  caption_label: "text-sm font-extrabold text-[#26384D]",
+  nav: "absolute left-3 right-3 top-3 flex items-center justify-between",
+  button_previous:
+    "inline-flex h-8 w-8 items-center justify-center rounded-xl border border-[#E6D8C7] bg-white/76 text-[#8A552B] transition hover:border-[#D49A52] hover:bg-[#FFF8EF]",
+  button_next:
+    "inline-flex h-8 w-8 items-center justify-center rounded-xl border border-[#E6D8C7] bg-white/76 text-[#8A552B] transition hover:border-[#D49A52] hover:bg-[#FFF8EF]",
+  chevron: "h-4 w-4 fill-current",
+  month_grid: "w-full border-collapse",
+  weekdays: "grid grid-cols-7",
+  weekday: "py-1 text-center text-[0.68rem] font-bold text-[#9A8D80]",
+  week: "grid grid-cols-7 gap-1",
+  day: "aspect-square p-0 text-center",
+  day_button:
+    "h-8 w-8 rounded-xl text-sm font-bold text-[#26384D] transition hover:bg-[#FFF8EF] hover:text-[#8A552B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D49A52]/30",
+  today:
+    "[&>button]:border [&>button]:border-[#D49A52] [&>button]:bg-[#FFF8EF] [&>button]:text-[#8A552B]",
+  selected:
+    "[&>button]:bg-[linear-gradient(135deg,#8A552B,#14243A)] [&>button]:text-[#FFF8EF] [&>button]:shadow-[0_10px_22px_rgba(20,36,58,0.14)]",
+  outside: "opacity-35",
+};
+
+function formatDateAnswer(value: string, language: "en" | "zh") {
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
 
   if (!match) {
     return value;
   }
 
-  const [, year, month, day, hour, minute] = match;
+  const [, year, month, day] = match;
 
   if (language === "zh") {
-    return `${year}年${month}月${day}日 ${hour}:${minute}`;
+    return `${year}年${month}月${day}日`;
   }
 
   const date = new Date(Number(year), Number(month) - 1, Number(day));
@@ -719,38 +745,101 @@ function formatDateTimeAnswer(value: string, language: "en" | "zh") {
     date,
   );
 
-  return `${monthLabel} ${Number(day)}, ${year}, ${hour}:${minute}`;
+  return `${monthLabel} ${Number(day)}, ${year}`;
+}
+
+function padDatePart(value: number) {
+  return String(value).padStart(2, "0");
+}
+
+function formatDateValue(date: Date) {
+  return [
+    date.getFullYear(),
+    padDatePart(date.getMonth() + 1),
+    padDatePart(date.getDate()),
+  ].join("-");
+}
+
+function parseDateDraft(value: string) {
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+
+  if (match) {
+    const [, year, month, day] = match;
+
+    return new Date(Number(year), Number(month) - 1, Number(day));
+  }
+
+  return undefined;
 }
 
 function DateTimeAnswerInput({
   value,
   questionTitle,
   sourceQuestion,
-  onChange,
+  onConfirm,
 }: {
   value: string;
   questionTitle: string;
   sourceQuestion: string;
-  onChange: (value: string) => void;
+  onConfirm: (value: string) => void;
 }) {
   const language =
     hasCjkText(questionTitle) || hasCjkText(sourceQuestion) ? "zh" : "en";
-  const placeholder =
-    language === "zh" ? "选择日期和时间" : "Select date and time";
-  const displayValue = value
-    ? formatDateTimeAnswer(value, language)
+  const placeholder = language === "zh" ? "选择日期" : "Select date";
+  const confirmLabel = language === "zh" ? "确定" : "Confirm";
+  const cancelLabel = language === "zh" ? "取消" : "Cancel";
+  const [isOpen, setIsOpen] = useState(false);
+  const [draftDate, setDraftDate] = useState<Date | undefined>(() =>
+    parseDateDraft(value),
+  );
+  const pickerRootRef = useRef<HTMLDivElement>(null);
+  const selectedValue = value;
+  const displayValue = selectedValue
+    ? formatDateAnswer(selectedValue, language)
     : placeholder;
-  const inputRef = useRef<HTMLInputElement>(null);
 
-  function openPicker() {
-    const input = inputRef.current;
-
-    if (!input) {
+  useEffect(() => {
+    if (!isOpen) {
       return;
     }
 
-    input.focus();
-    input.showPicker?.();
+    function handleDocumentPointerDown(event: PointerEvent) {
+      const target = event.target;
+
+      if (!(target instanceof Node)) {
+        return;
+      }
+
+      if (!pickerRootRef.current?.contains(target)) {
+        setIsOpen(false);
+        setDraftDate(parseDateDraft(value));
+      }
+    }
+
+    function handleDocumentKeyDown(event: globalThis.KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsOpen(false);
+        setDraftDate(parseDateDraft(value));
+      }
+    }
+
+    document.addEventListener("pointerdown", handleDocumentPointerDown);
+    document.addEventListener("keydown", handleDocumentKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handleDocumentPointerDown);
+      document.removeEventListener("keydown", handleDocumentKeyDown);
+    };
+  }, [isOpen, value]);
+
+  function openPicker() {
+    setDraftDate(parseDateDraft(value));
+    setIsOpen(true);
+  }
+
+  function closePicker() {
+    setIsOpen(false);
+    setDraftDate(parseDateDraft(value));
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
@@ -762,33 +851,72 @@ function DateTimeAnswerInput({
     openPicker();
   }
 
+  function handleConfirm(event: MouseEvent<HTMLButtonElement>) {
+    event.stopPropagation();
+
+    if (!draftDate) {
+      return;
+    }
+
+    setIsOpen(false);
+    onConfirm(formatDateValue(draftDate));
+  }
+
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={openPicker}
-      onKeyDown={handleKeyDown}
-      className="group relative flex min-h-12 w-full cursor-pointer items-center gap-3 overflow-hidden rounded-2xl border border-[#E6D8C7] bg-white/82 px-4 text-left text-sm shadow-[0_8px_18px_rgba(20,36,58,0.06),0_1px_0_rgba(255,255,255,0.9)_inset] ring-1 ring-[#E6D8C7]/45 transition duration-200 hover:-translate-y-0.5 hover:border-[#D49A52] hover:bg-[#FFF8EF] hover:shadow-[0_16px_32px_rgba(20,36,58,0.12)] focus-visible:border-[#D49A52] focus-visible:ring-2 focus-visible:ring-[#D49A52]/25"
-    >
-      <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[#E6D8C7] bg-[#FFF8EF] text-[#8A552B] shadow-[0_6px_14px_rgba(20,36,58,0.06)] transition group-hover:border-[#D49A52]">
-        <CalendarClock className="h-4 w-4" />
-      </span>
-      <span
-        className={`min-w-0 flex-1 truncate font-semibold ${
-          value ? "text-[#172033]" : "text-[#8E9AB0]"
-        }`}
+    <div ref={pickerRootRef} className="relative z-30">
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={openPicker}
+        onKeyDown={handleKeyDown}
+        className="group relative flex min-h-11 w-full cursor-pointer items-center gap-3 overflow-hidden rounded-2xl border border-[#E6D8C7] bg-white/82 px-3.5 text-left text-sm shadow-[0_8px_18px_rgba(20,36,58,0.06),0_1px_0_rgba(255,255,255,0.9)_inset] ring-1 ring-[#E6D8C7]/45 transition duration-200 hover:-translate-y-0.5 hover:border-[#D49A52] hover:bg-[#FFF8EF] hover:shadow-[0_16px_32px_rgba(20,36,58,0.12)] focus-visible:border-[#D49A52] focus-visible:ring-2 focus-visible:ring-[#D49A52]/25"
       >
-        {displayValue}
-      </span>
-      <input
-        ref={inputRef}
-        type="datetime-local"
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        aria-label={placeholder}
-        tabIndex={-1}
-        className="pointer-events-none absolute inset-0 h-full w-full opacity-0"
-      />
+        <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-[#E6D8C7] bg-[#FFF8EF] text-[#8A552B] shadow-[0_6px_14px_rgba(20,36,58,0.06)] transition group-hover:border-[#D49A52]">
+          <CalendarClock className="h-3.5 w-3.5" />
+        </span>
+        <span
+          className={`min-w-0 flex-1 truncate font-semibold ${
+            selectedValue ? "text-[#172033]" : "text-[#8E9AB0]"
+          }`}
+        >
+          {displayValue}
+        </span>
+      </div>
+
+      {isOpen ? (
+        <div
+          role="dialog"
+          aria-modal="false"
+          className="fixed inset-x-4 bottom-4 z-50 max-h-[calc(100vh-2rem)] overflow-y-auto overscroll-contain rounded-2xl border border-[#E6D8C7] bg-[linear-gradient(145deg,#FFFFFF_0%,#FFFDF9_55%,#F7EFE5_100%)] p-3 text-[#172033] shadow-[0_30px_70px_rgba(10,18,30,0.26),0_1px_0_rgba(255,255,255,0.95)_inset] ring-1 ring-[#E6D8C7]/55 sm:absolute sm:inset-auto sm:top-[calc(100%+0.45rem)] sm:left-0 sm:max-h-none sm:w-[20rem] sm:overflow-visible"
+        >
+          <DayPicker
+            mode="single"
+            selected={draftDate}
+            onSelect={setDraftDate}
+            locale={language === "zh" ? zhCN : undefined}
+            classNames={COMPACT_DAY_PICKER_CLASS_NAMES}
+            showOutsideDays
+          />
+
+          <div className="mt-3 flex justify-end gap-2 border-t border-[#E6D8C7]/70 pt-3">
+            <button
+              type="button"
+              onClick={closePicker}
+              className="h-9 rounded-xl border border-[#E6D8C7] bg-white/78 px-3.5 text-sm font-bold text-[#74685C] transition hover:border-[#D49A52] hover:bg-[#FFF8EF] hover:text-[#172033]"
+            >
+              {cancelLabel}
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirm}
+              disabled={!draftDate}
+              className="h-9 rounded-xl bg-[linear-gradient(135deg,#8A552B,#14243A)] px-3.5 text-sm font-bold text-[#FFF8EF] shadow-[0_10px_22px_rgba(20,36,58,0.12)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              {confirmLabel}
+            </button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -814,11 +942,22 @@ function ClarificationFlowPanel({
   onCancel: () => void;
   onGenerate: () => void;
 }) {
-  const question = flow.flow.questions[flow.currentStepIndex];
-  const isLastStep = flow.currentStepIndex >= flow.flow.questions.length - 1;
+  const questions = flow.flow.questions;
+  const question = questions[flow.currentStepIndex];
+  const isLastQuestion = flow.currentStepIndex >= questions.length - 1;
   const isFirstStep = flow.currentStepIndex === 0;
   const answer = question ? flow.answers[question.id] : undefined;
   const otherAnswer = question ? flow.otherAnswers[question.id] ?? "" : "";
+  const questionLanguage =
+    question && (hasCjkText(question.title) || hasCjkText(flow.sourceQuestion))
+      ? "zh"
+      : "en";
+  const multiChoiceHint =
+    questionLanguage === "zh"
+      ? "可选择一个或多个选项"
+      : "Select one or more options";
+  const otherPlaceholder =
+    questionLanguage === "zh" ? "请输入其他答案" : "Type your own answer";
   const hasAnswer = Boolean(
     question &&
       (!question.required ||
@@ -833,7 +972,7 @@ function ClarificationFlowPanel({
   function toggleMultiChoice(value: string) {
     const current = Array.isArray(answer) ? answer : [];
 
-    if (isFirstStep && !isLastStep) {
+    if (isFirstStep && !isLastQuestion) {
       onAnswer(question.id, [value]);
       onNext();
       return;
@@ -847,12 +986,8 @@ function ClarificationFlowPanel({
     );
   }
 
-  function handleDateTimeChange(value: string) {
-    onAnswer(question.id, value);
-
-    if (value && !isLastStep) {
-      onNext();
-    }
+  function handleDateTimeConfirm(value: string) {
+    onAnswerAndAdvance(question.id, value);
   }
 
   function handleTextKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
@@ -871,16 +1006,14 @@ function ClarificationFlowPanel({
       return;
     }
 
-    if (!isLastStep) {
-      onNext();
-    }
+    onNext();
   }
 
   return (
     <div className="mx-auto w-full max-w-[52rem] pb-8">
       <div className="flex items-start gap-0 sm:gap-3">
         <BotBadge className="hidden sm:mt-1 sm:flex sm:h-10 sm:w-10" />
-        <article className={`relative w-full overflow-hidden rounded-[1.25rem] rounded-tl-sm p-5 text-[0.94rem] leading-7 text-[#26384D] sm:p-7 ${ASSISTANT_SURFACE_CLASS}`}>
+        <article className={`relative w-full overflow-visible rounded-[1.25rem] rounded-tl-sm p-5 text-[0.94rem] leading-7 text-[#26384D] sm:p-7 ${ASSISTANT_SURFACE_CLASS}`}>
           <div className="relative z-10 space-y-5">
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -904,10 +1037,11 @@ function ClarificationFlowPanel({
 
             {question.type === "date_time" ? (
               <DateTimeAnswerInput
+                key={question.id}
                 value={typeof answer === "string" ? answer : ""}
                 questionTitle={question.title}
                 sourceQuestion={flow.sourceQuestion}
-                onChange={handleDateTimeChange}
+                onConfirm={handleDateTimeConfirm}
               />
             ) : question.type === "text" ? (
               <textarea
@@ -918,32 +1052,62 @@ function ClarificationFlowPanel({
                 placeholder="Type your answer..."
               />
             ) : (
-              <div className="grid gap-2 sm:grid-cols-2">
-                {question.options?.map((option) => {
-                  const selected =
-                    question.type === "multi_choice"
-                      ? Array.isArray(answer) && answer.includes(option.value)
-                      : answer === option.value;
+              <div className="space-y-2">
+                {question.type === "multi_choice" ? (
+                  <p className="text-xs font-bold text-[#8A552B]">
+                    {multiChoiceHint}
+                  </p>
+                ) : null}
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {question.options?.map((option) => {
+                    const selected =
+                      question.type === "multi_choice"
+                        ? Array.isArray(answer) && answer.includes(option.value)
+                        : answer === option.value;
+                    const isMultiChoice = question.type === "multi_choice";
 
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() =>
-                        question.type === "multi_choice"
-                          ? toggleMultiChoice(option.value)
-                          : onAnswerAndAdvance(question.id, option.value)
-                      }
-                      className={`min-h-11 rounded-xl border px-3.5 py-2.5 text-left text-sm font-semibold shadow-[0_8px_18px_rgba(20,36,58,0.06)] transition duration-200 focus-visible:ring-2 focus-visible:ring-[#D49A52]/40 ${
-                        selected
-                          ? "border-[#8A552B] bg-[linear-gradient(135deg,#8A552B,#14243A)] text-[#FFF8EF] shadow-[0_12px_26px_rgba(20,36,58,0.16)] hover:-translate-y-0.5 hover:brightness-110 hover:shadow-[0_16px_32px_rgba(20,36,58,0.20)]"
-                          : "border-[#E6D8C7] bg-white/76 text-[#26384D] hover:-translate-y-0.5 hover:border-[#D49A52] hover:bg-[#FFF8EF] hover:text-[#14243A] hover:shadow-[0_16px_32px_rgba(20,36,58,0.14)]"
-                      }`}
-                    >
-                      {option.label}
-                    </button>
-                  );
-                })}
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() =>
+                          isMultiChoice
+                            ? toggleMultiChoice(option.value)
+                            : onAnswerAndAdvance(question.id, option.value)
+                        }
+                        className={`flex min-h-11 items-center gap-3 rounded-xl border px-3.5 py-2.5 text-left text-sm font-semibold shadow-[0_8px_18px_rgba(20,36,58,0.06)] transition duration-200 focus-visible:ring-2 focus-visible:ring-[#D49A52]/40 ${
+                          selected
+                            ? "border-[#8A552B] bg-[linear-gradient(135deg,#8A552B,#14243A)] text-[#FFF8EF] shadow-[0_12px_26px_rgba(20,36,58,0.16)] hover:-translate-y-0.5 hover:brightness-110 hover:shadow-[0_16px_32px_rgba(20,36,58,0.20)]"
+                            : "border-[#E6D8C7] bg-white/76 text-[#26384D] hover:-translate-y-0.5 hover:border-[#D49A52] hover:bg-[#FFF8EF] hover:text-[#14243A] hover:shadow-[0_16px_32px_rgba(20,36,58,0.14)]"
+                        }`}
+                      >
+                        <span
+                          className={`flex h-5 w-5 shrink-0 items-center justify-center border transition ${
+                            isMultiChoice ? "rounded-md" : "rounded-full"
+                          } ${
+                            selected
+                              ? "border-[#FFF8EF] bg-[#FFF8EF] text-[#8A552B]"
+                              : "border-[#D9C7B3] bg-white/72 text-transparent"
+                          }`}
+                          aria-hidden="true"
+                        >
+                          {isMultiChoice ? (
+                            <Check className="h-3.5 w-3.5" />
+                          ) : (
+                            <span
+                              className={`h-2 w-2 rounded-full ${
+                                selected ? "bg-[#8A552B]" : "bg-transparent"
+                              }`}
+                            />
+                          )}
+                        </span>
+                        <span className="min-w-0 flex-1 leading-5">
+                          {option.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
@@ -952,7 +1116,7 @@ function ClarificationFlowPanel({
                 value={otherAnswer}
                 onChange={(event) => onOtherAnswer(question.id, event.target.value)}
                 className="h-11 w-full rounded-xl border border-[#E6D8C7] bg-white/80 px-4 text-sm font-medium text-[#172033] outline-none focus:border-[#D49A52] focus:ring-2 focus:ring-[#D49A52]/25"
-                placeholder="Other..."
+                placeholder={otherPlaceholder}
               />
             ) : null}
 
@@ -976,11 +1140,11 @@ function ClarificationFlowPanel({
                 </button>
                 <button
                   type="button"
-                  onClick={isLastStep ? onGenerate : onNext}
+                  onClick={isLastQuestion ? onGenerate : onNext}
                   disabled={!hasAnswer || isGenerating}
                   className="h-10 rounded-xl bg-[linear-gradient(135deg,#8A552B,#14243A)] px-4 text-sm font-bold text-[#FFF8EF] shadow-[0_10px_22px_rgba(20,36,58,0.12)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-55"
                 >
-                  {isLastStep ? "Generate itinerary" : "Next"}
+                  {isLastQuestion ? "Generate itinerary" : "Next"}
                 </button>
               </div>
             </div>
@@ -1788,6 +1952,7 @@ export function ChatView({ chatId }: { chatId: string }) {
       loadingMessageId,
     );
     let activeAssistantMessageId = loadingMessageId;
+    let streamedContent = "";
 
     try {
       const response = await fetch(`/api/chats/${targetChatId}/messages/stream`, {
@@ -1824,7 +1989,6 @@ export function ChatView({ chatId }: { chatId: string }) {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
-      let streamedContent = "";
 
       while (true) {
         const { value, done } = await reader.read();
@@ -2445,25 +2609,33 @@ export function ChatView({ chatId }: { chatId: string }) {
     questionId: string,
     value: string,
   ) {
-    setActiveClarificationFlow((current) => {
-      if (!current) {
-        return current;
-      }
+    if (!activeClarificationFlow) {
+      return;
+    }
 
-      const currentIndex = current.currentStepIndex;
-      const isLastStep = currentIndex >= current.flow.questions.length - 1;
+    const currentIndex = activeClarificationFlow.currentStepIndex;
+    const isLastStep =
+      currentIndex >= activeClarificationFlow.flow.questions.length - 1;
+    const nextFlow = {
+      ...activeClarificationFlow,
+      answers: {
+        ...activeClarificationFlow.answers,
+        [questionId]: value,
+      },
+      currentStepIndex: isLastStep
+        ? activeClarificationFlow.currentStepIndex
+        : Math.min(
+            activeClarificationFlow.flow.questions.length - 1,
+            currentIndex + 1,
+          ),
+    };
 
-      return {
-        ...current,
-        answers: {
-          ...current.answers,
-          [questionId]: value,
-        },
-        currentStepIndex: isLastStep
-          ? currentIndex
-          : Math.min(current.flow.questions.length - 1, currentIndex + 1),
-      };
-    });
+    if (isLastStep) {
+      startClarificationGeneration(nextFlow);
+      return;
+    }
+
+    setActiveClarificationFlow(nextFlow);
   }
 
   function handleClarificationOtherAnswer(questionId: string, value: string) {
@@ -2492,17 +2664,26 @@ export function ChatView({ chatId }: { chatId: string }) {
   }
 
   function handleClarificationNext() {
-    setActiveClarificationFlow((current) =>
-      current
-        ? {
-            ...current,
-            currentStepIndex: Math.min(
-              current.flow.questions.length - 1,
-              current.currentStepIndex + 1,
-            ),
-          }
-        : current,
-    );
+    if (!activeClarificationFlow) {
+      return;
+    }
+
+    const currentIndex = activeClarificationFlow.currentStepIndex;
+    const isLastStep =
+      currentIndex >= activeClarificationFlow.flow.questions.length - 1;
+
+    if (isLastStep) {
+      startClarificationGeneration(activeClarificationFlow);
+      return;
+    }
+
+    setActiveClarificationFlow({
+      ...activeClarificationFlow,
+      currentStepIndex: Math.min(
+        activeClarificationFlow.flow.questions.length - 1,
+        currentIndex + 1,
+      ),
+    });
   }
 
   function handleClarificationCancel() {
@@ -2521,16 +2702,15 @@ export function ChatView({ chatId }: { chatId: string }) {
     }
   }
 
-  function handleClarificationGenerate() {
-    if (!activeClarificationFlow || !chat || isGenerating) {
+  function startClarificationGeneration(flow: ActiveClarificationFlow) {
+    if (!chat || isGenerating) {
       return;
     }
 
-    const submission = mergeClarifiedTripContext(activeClarificationFlow);
+    const submission = mergeClarifiedTripContext(flow);
     const loadingMessageId = `assistant-loading-${Date.now()}`;
-    const shouldPersistSourceQuestion = !activeClarificationFlow.sourceUserMessageId;
-    const optimisticUserMessageId =
-      activeClarificationFlow.optimisticUserMessageId;
+    const shouldPersistSourceQuestion = !flow.sourceUserMessageId;
+    const optimisticUserMessageId = flow.optimisticUserMessageId;
     const userMessage =
       shouldPersistSourceQuestion && !optimisticUserMessageId
         ? createMessage("user", submission.sourceQuestion)
@@ -2568,6 +2748,14 @@ export function ChatView({ chatId }: { chatId: string }) {
         ? optimisticUserMessageId ?? userMessage?.id
         : undefined,
     });
+  }
+
+  function handleClarificationGenerate() {
+    if (!activeClarificationFlow) {
+      return;
+    }
+
+    startClarificationGeneration(activeClarificationFlow);
   }
 
   async function copyText(

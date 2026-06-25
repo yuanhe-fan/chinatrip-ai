@@ -125,6 +125,7 @@ Back        Next
 
 - 一次只展示一个问题。
 - 支持单选、多选、文本输入和 `Other` 输入。
+- 时间题使用 DayPicker 日期选择弹层，弹层内部提供 `Cancel` / `Confirm` 或 `取消` / `确定`；只选择日期，不选择小时和分钟；点击确认后才提交，如果是最后一题则直接生成。
 - 支持 `Back` 返回上一题并修改。
 - 支持 `Next` 前进。
 - 必填题未完成时不能进入下一步。
@@ -151,6 +152,20 @@ Back        Next
 示例二：
 
 ```text
+用户：Can you help me plan a simple five-day China itinerary?
+```
+
+`China` / `中国` 只代表国家范围，不等同于一个可执行的具体城市。系统不能只问一个城市问题后就进入生成，应先补齐更能决定路线质量的基础上下文，例如：
+
+- 北京、上海、成都、西安或其他城市。
+- 更偏历史、美食、熊猫、现代城市、自然风景还是购物。
+- 同行人或节奏。
+
+在城市或旅行主题明确之前，不应优先询问抵达和离开时间。
+
+示例三：
+
+```text
 用户：帮我制定上海5日游，带老人，不要太累，住人民广场附近
 ```
 
@@ -160,7 +175,7 @@ Back        Next
 - 是否有饮食限制。
 - 是否需要避开大量步行或楼梯。
 
-示例三：
+示例四：
 
 ```text
 用户：北京5日游，两个人，住王府井，喜欢历史和美食，不吃辣，第一天下午到，最后一天上午走
@@ -168,27 +183,18 @@ Back        Next
 
 如果信息已经足够，系统可以跳过澄清流，直接生成行程。
 
-### 5.5 确认与执行
+### 5.5 执行
 
-所有问题完成后展示确认摘要：
+所有问题完成后不再展示 `Trip setup` 确认摘要页。
 
-```text
-Trip setup
+用户完成最后一道题后，系统直接合成前端当前会话中的临时答案，并调用最终行程生成。
 
-City: Beijing
-Days: 5
-Travelers: Couple
-Pace: Balanced
-Start area: Wangfujing
-Interests: History, food
-Dietary needs: No spicy
-Arrival: Day 1 afternoon
-Departure: Day 5 morning
+最后一步的触发方式按题型处理：
 
-[Cancel] [Generate itinerary]
-```
-
-用户点击 `Generate itinerary` 后，系统才调用最终行程生成。
+- 单选题：点击最后一个答案后直接生成。
+- 多选题：点击最后一步的 `Generate itinerary` 后生成。
+- 文本题：按 Enter 或点击最后一步按钮后生成。
+- 时间题：在弹层中选择日期并点击内部 `Confirm` / `确定` 后生成。
 
 用户点击 `Cancel` 后，澄清流结束，聊天页回到普通输入状态。
 
@@ -214,7 +220,7 @@ Departure: Day 5 morning
 
 | 字段 | 说明 | 是否必须 |
 | --- | --- | --- |
-| `destination` | 城市或目的地范围 | 高优先级 |
+| `destination` | 具体城市或城市组合；`China` / `中国` 仅作为国家范围，不算具体目的地 | 高优先级 |
 | `days` | 行程天数 | 高优先级 |
 | `arrivalTime` | 抵达时间 | 可选 |
 | `departureTime` | 离开时间 | 可选 |
@@ -303,7 +309,7 @@ type ActiveClarificationFlow = {
 - 用户选择和输入过程只保存在当前页面 state。
 - 用户刷新页面后不恢复澄清流。
 - 用户取消后清空本地 state。
-- 用户点击 `Generate itinerary` 后一次性提交最终上下文。
+- 用户完成最后一道澄清题后一次性提交最终上下文。
 
 不保存：
 
@@ -374,11 +380,8 @@ AI 负责理解意图、抽取上下文、判断缺口、生成问题
 
 不得让 AI 直接决定任意前端布局。
 
-AI 输出必须经过 schema 校验。校验失败时降级为普通行程回答，或展示一条固定兜底问题：
-
-```text
-To build a better itinerary, which city and how many days should I plan for?
-```
+AI 输出必须经过 schema 校验。校验失败时降级为普通行程回答，或展示上下文感知兜底问题。
+兜底问题不得重复询问已知字段：如果城市和天数已知，应优先询问抵达/离开时间、同行人、节奏或兴趣；只有城市和天数都缺失时，才询问城市和天数。
 
 ## 8. 实施阶段
 
@@ -444,6 +447,7 @@ To build a better itinerary, which city and how many days should I plan for?
 - 信息不足时必须追问的 case。
 - 澄清答案进入最终行程的 case。
 - schema 校验失败的兜底 case。
+- 高频输入回归：`Plan a one-day Chengdu itinerary...`、`北京五日游`、`上海5日游，带老人，不要太累，住人民广场附近`。
 
 完成标准：
 

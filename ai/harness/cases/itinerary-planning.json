@@ -65,5 +65,19 @@
       "maxWords": 850
     },
     "riskTags": ["itinerary", "accessibility", "multi_day"]
+  },
+  {
+    "id": "itinerary-beijing-context-rich",
+    "profile": "itinerary_planning",
+    "language": "en",
+    "question": "Plan a 5-day Beijing itinerary for two people staying near Wangfujing. We like history and food, avoid spicy food, arrive on Day 1 afternoon, and leave on Day 5 morning.",
+    "expected": {
+      "mustMention": ["Day 1", "Day 5"],
+      "mustMentionAny": [["Wangfujing"], ["history", "historic"], ["food", "restaurant"], ["spicy"]],
+      "requiredHeadings": ["Direct Answer", "Do This", "Watch Out"],
+      "requiresActionSteps": true,
+      "maxWords": 1100
+    },
+    "riskTags": ["itinerary", "beijing", "context_rich"]
   }
 ]

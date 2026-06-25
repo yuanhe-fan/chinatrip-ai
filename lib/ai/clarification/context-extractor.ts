@@ -9,8 +9,6 @@ const CITY_PATTERNS: Array<[RegExp, string]> = [
   [/成都/, "Chengdu"],
   [/\bxi'?an\b/i, "Xi'an"],
   [/西安/, "Xi'an"],
-  [/\bchina\b/i, "China"],
-  [/中国/, "China"],
 ];
 
 const ENGLISH_NUMBER_WORDS: Record<string, number> = {
@@ -126,6 +124,64 @@ function extractTimeRange(message: string): Pick<
   };
 }
 
+function extractStartArea(message: string) {
+  const patterns = [
+    /(?:住|住在|酒店在|从)([^，。,.；;]{2,24}?)(?:附近|出发|开始|$)/,
+    /\b(?:stay(?:ing)?|hotel|start(?:ing)? from|near)\s+([^,.]{2,40})/i,
+  ];
+
+  for (const pattern of patterns) {
+    const match = message.match(pattern);
+    const value = match?.[1]?.trim();
+
+    if (value) {
+      return value;
+    }
+  }
+
+  return undefined;
+}
+
+function extractInterests(message: string) {
+  const interests: string[] = [];
+  const candidates: Array<[RegExp, string]> = [
+    [/(历史|故宫|古迹|history|historic)/i, "history"],
+    [/(美食|吃|小吃|food|restaurant|snack)/i, "food"],
+    [/(博物馆|museum)/i, "museums"],
+    [/(购物|shopping)/i, "shopping"],
+    [/(熊猫|panda)/i, "pandas"],
+    [/(夜景|夜生活|night view|nightlife)/i, "night views"],
+    [/(本地生活|local life|neighborhood)/i, "local life"],
+  ];
+
+  for (const [pattern, value] of candidates) {
+    if (pattern.test(message)) {
+      interests.push(value);
+    }
+  }
+
+  return interests.length > 0 ? interests : undefined;
+}
+
+function extractDietaryNeeds(message: string) {
+  const needs: string[] = [];
+  const candidates: Array<[RegExp, string]> = [
+    [/(不吃辣|不要辣|no spicy|not spicy|avoid spicy)/i, "no spicy"],
+    [/(素食|vegetarian)/i, "vegetarian"],
+    [/(vegan|纯素)/i, "vegan"],
+    [/(清真|halal)/i, "halal"],
+    [/(过敏|allergy|allergic)/i, "food allergy"],
+  ];
+
+  for (const [pattern, value] of candidates) {
+    if (pattern.test(message)) {
+      needs.push(value);
+    }
+  }
+
+  return needs.length > 0 ? needs : undefined;
+}
+
 export function extractClarifiedTripContext(
   message: string,
 ): ClarifiedTripContext {
@@ -138,6 +194,10 @@ export function extractClarifiedTripContext(
     }
   }
 
+  if (!context.destination && /(?:\bchina\b|中国)/i.test(message)) {
+    context.notes = "Destination scope: China";
+  }
+
   const days = extractDays(message);
 
   if (days) {
@@ -148,6 +208,8 @@ export function extractClarifiedTripContext(
 
   if (/(老人|老年|elder|senior)/i.test(message)) {
     context.travelers = "Includes senior travelers";
+  } else if (/(两个人|2个人|couple|two people|two travelers)/i.test(message)) {
+    context.travelers = "Two travelers";
   } else if (/(孩子|儿童|小孩|kid|child|children|family)/i.test(message)) {
     context.travelers = "Includes children or family travelers";
   } else if (/(solo|alone|一个人|独自)/i.test(message)) {
@@ -160,6 +222,36 @@ export function extractClarifiedTripContext(
     context.pace = "Packed";
   } else if (/(适中|moderate|balanced)/i.test(message)) {
     context.pace = "Moderate";
+  }
+
+  if (/(少走路|不要太累|less walking|low walking|avoid stairs|无障碍|wheelchair)/i.test(message)) {
+    context.specialNeeds = ["less walking"];
+  }
+
+  const startArea = extractStartArea(message);
+
+  if (startArea) {
+    context.startArea = startArea;
+  }
+
+  const interests = extractInterests(message);
+
+  if (interests) {
+    context.interests = interests;
+  }
+
+  const dietaryNeeds = extractDietaryNeeds(message);
+
+  if (dietaryNeeds) {
+    context.dietaryNeeds = dietaryNeeds;
+  }
+
+  if (/(预算|budget|cheap|economy|mid-range|luxury)/i.test(message)) {
+    context.budget = /cheap|economy|省钱|低预算/i.test(message)
+      ? "economy"
+      : /luxury|高端|奢华/i.test(message)
+        ? "luxury"
+        : "budget mentioned";
   }
 
   return context;
