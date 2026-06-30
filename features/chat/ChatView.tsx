@@ -887,7 +887,7 @@ function DateTimeAnswerInput({
         <div
           role="dialog"
           aria-modal="false"
-          className="fixed inset-x-4 bottom-4 z-50 max-h-[calc(100vh-2rem)] overflow-y-auto overscroll-contain rounded-2xl border border-[#E6D8C7] bg-[linear-gradient(145deg,#FFFFFF_0%,#FFFDF9_55%,#F7EFE5_100%)] p-3 text-[#172033] shadow-[0_30px_70px_rgba(10,18,30,0.26),0_1px_0_rgba(255,255,255,0.95)_inset] ring-1 ring-[#E6D8C7]/55 sm:absolute sm:inset-auto sm:top-[calc(100%+0.45rem)] sm:left-0 sm:max-h-none sm:w-[20rem] sm:overflow-visible"
+          className="relative z-50 mt-2 w-full rounded-2xl border border-[#E6D8C7] bg-[linear-gradient(145deg,#FFFFFF_0%,#FFFDF9_55%,#F7EFE5_100%)] p-3 text-[#172033] shadow-[0_18px_38px_rgba(10,18,30,0.16),0_1px_0_rgba(255,255,255,0.95)_inset] ring-1 ring-[#E6D8C7]/55 sm:absolute sm:top-[calc(100%+0.45rem)] sm:left-0 sm:mt-0 sm:w-[20rem] sm:shadow-[0_30px_70px_rgba(10,18,30,0.26),0_1px_0_rgba(255,255,255,0.95)_inset]"
         >
           <DayPicker
             mode="single"
