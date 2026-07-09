@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import { apiError } from "@/lib/api/server";
+import { apiError, isDatabaseUnavailableError } from "@/lib/api/server";
 import { SendMessageResponse, StreamMessageEvent } from "@/lib/api/types";
 import { getCurrentIdentity } from "@/lib/auth/current-identity";
 import { AiProviderError, streamTravelAnswer } from "@/lib/ai";
@@ -187,6 +187,14 @@ export async function POST(request: Request, context: RouteContext) {
         "MESSAGE_GENERATION_IN_PROGRESS",
         "An answer is already being generated for this chat.",
         409,
+      );
+    }
+
+    if (isDatabaseUnavailableError(error)) {
+      return apiError(
+        "DATABASE_UNAVAILABLE",
+        "Database is unavailable. Please try again later.",
+        503,
       );
     }
 

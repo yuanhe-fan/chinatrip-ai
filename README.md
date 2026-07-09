@@ -7,7 +7,7 @@ It helps users ask practical questions about China travel, payments, transport, 
 ## Current Phase
 
 ```text
-Phase 4: AI automation engineering baseline
+Phase 5: Dynamic trip clarification release hardening
 ```
 
 Phases 1-3 have established:
@@ -17,11 +17,17 @@ Phases 1-3 have established:
 - Structured answer rendering and approved visual assets.
 - RAG knowledge ingestion, pgvector retrieval, and answer sources.
 
-Phase 4 focuses on:
+Phase 4 established:
 
 - AI evaluation Harness.
 - Prompt versioning and answer contracts.
 - AI development rules and project Skills.
+
+Phase 5 focuses on:
+
+- Dynamic itinerary clarification inside the existing chat flow.
+- Temporary, non-persistent trip context collection before itinerary generation.
+- Context-aware clarification quality, fallback behavior, and UI release hardening.
 
 ## MVP Scope
 
@@ -155,12 +161,13 @@ AI:
 
 ## AI Engineering Strategy
 
-Phase 4 sequence:
+Phase 4 and Phase 5 sequence:
 
 ```text
 Harness quality baseline
 → Prompt versions and answer contracts
 → AI development rules and Skills
+→ Dynamic trip clarification
 → Continuous quality feedback loop
 ```
 
@@ -175,14 +182,14 @@ Read product and technical contracts
 → Update Prompt docs and Skills
 ```
 
-## Phase 4 Delivery Order
+## Current Phase 5 Delivery Order
 
 Recommended sequence:
 
 ```text
-1. Establish the Phase 4 documentation baseline.
-2. Implement the Harness case schema, runner, checks, and reports.
-3. Add smoke and full evaluation cases.
-4. Map answer contracts to Harness rules.
-5. Upgrade project Skills and merge requirements.
+1. Align Phase 5 product, API, technical, and local-development docs.
+2. Harden dynamic clarification error handling and fallback behavior.
+3. Add targeted itinerary clarification regression tests.
+4. Run itinerary profile Harness and smoke checks.
+5. Complete PC and mobile UI acceptance for the clarification flow.
 ```

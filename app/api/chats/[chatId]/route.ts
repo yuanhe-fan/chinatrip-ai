@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { apiError } from "@/lib/api/server";
+import { apiError, isDatabaseUnavailableError } from "@/lib/api/server";
 import { ChatDetailResponse } from "@/lib/api/types";
 import {
   createChatOwnerWhere,
@@ -109,6 +109,14 @@ export async function GET(_request: Request, context: RouteContext) {
     return NextResponse.json(response);
   } catch (error) {
     console.error("Failed to get chat detail", error);
+
+    if (isDatabaseUnavailableError(error)) {
+      return apiError(
+        "DATABASE_UNAVAILABLE",
+        "Database is unavailable. Please try again later.",
+        503,
+      );
+    }
 
     return apiError("INTERNAL_ERROR", "Failed to load chat.", 500);
   }

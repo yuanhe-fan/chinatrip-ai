@@ -216,7 +216,7 @@ export function extractClarifiedTripContext(
     context.travelers = "Solo traveler";
   }
 
-  if (/(轻松|慢节奏|relaxed|slow|easy pace)/i.test(message)) {
+  if (/(轻松|慢节奏|不要太累|relaxed|slow|easy pace)/i.test(message)) {
     context.pace = "Relaxed";
   } else if (/(紧凑|赶|packed|fast|intensive)/i.test(message)) {
     context.pace = "Packed";

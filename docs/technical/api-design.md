@@ -53,8 +53,11 @@ FORBIDDEN
 AI_GENERATION_FAILED
 RATE_LIMITED
 AI_QUOTA_EXHAUSTED
+DATABASE_UNAVAILABLE
 INTERNAL_ERROR
 ```
+
+`DATABASE_UNAVAILABLE` uses HTTP 503 and means the server cannot reach the configured PostgreSQL database or `DATABASE_URL` is missing. Local development usually fixes this with `docker compose up -d` and a valid `.env.local`.
 
 RAG failures should not normally become public API errors. Embedding config issues, Doubao failures, pgvector query failures, and no-match results should degrade to a normal DeepSeek answer without sources.
 
@@ -124,6 +127,7 @@ GET /api/chats/:chatId
 PATCH /api/chats/:chatId
 POST /api/chats/:chatId/messages
 POST /api/chats/:chatId/messages/stream
+POST /api/chats/:chatId/clarifications
 POST /api/shared-answers
 GET /api/share/:shareId
 POST /api/share/:shareId/chats
@@ -193,6 +197,7 @@ Errors:
 
 - `EMPTY_MESSAGE`
 - `INVALID_LANGUAGE`
+- `DATABASE_UNAVAILABLE`
 - `INTERNAL_ERROR`
 
 ### GET /api/chats
@@ -234,6 +239,7 @@ Rules:
 Errors:
 
 - `INTERNAL_ERROR`
+- `DATABASE_UNAVAILABLE`
 
 ### GET /api/chats/:chatId
 
@@ -290,6 +296,50 @@ Errors:
 
 - `CHAT_NOT_FOUND`
 - `FORBIDDEN`
+- `DATABASE_UNAVAILABLE`
+- `INTERNAL_ERROR`
+
+### POST /api/chats/:chatId/clarifications
+
+Generates temporary trip-planning clarification questions before a formal itinerary answer. The endpoint does not write `messages` or `ai_usage_logs`.
+
+Request:
+
+```ts
+type CreateClarificationRequest = {
+  messageId?: string;
+  message?: string;
+  language?: "en" | "zh";
+  promptProfile?: PromptProfile;
+};
+```
+
+Response:
+
+```ts
+type CreateClarificationResponse = {
+  intent: "itinerary_planning";
+  needsClarification: boolean;
+  reason: string;
+  extractedContext: ClarifiedTripContext;
+  questions: ClarificationQuestion[];
+};
+```
+
+Rules:
+
+- Prefer `messageId` when the source user message is already persisted.
+- Use `message` only for temporary clarification judgment.
+- Clarification questions and step-by-step user choices are front-end state only.
+- Provider, JSON, or schema failures degrade to context-aware fallback questions.
+- `China` / `中国` is a broad country scope and does not count as a concrete destination.
+
+Errors:
+
+- `CHAT_NOT_FOUND`
+- `MESSAGE_NOT_FOUND`
+- `INVALID_REQUEST`
+- `DATABASE_UNAVAILABLE`
 - `INTERNAL_ERROR`
 
 ### PATCH /api/chats/:chatId
@@ -334,6 +384,8 @@ type SendMessageRequest = {
   promptProfile?: PromptProfile;
   sourceQuestionId?: string;
   sourceSubQuestionId?: string;
+  clarificationUsed?: boolean;
+  clarifiedTripContext?: ClarifiedTripContext;
 };
 ```
 
@@ -387,6 +439,7 @@ Database behavior:
 - Create a user message with the next sequence number when `message` is present.
 - Create an assistant message with `status=pending`.
 - Resolve prompt profile.
+- Persist `clarificationUsed` and `clarifiedTripContext` in user message metadata when present.
 - Run RAG retrieval unless the request uses fast path.
 - Call DeepSeek through the AI Provider Service.
 - Update assistant message to `complete` or `failed`.
@@ -406,6 +459,7 @@ Errors:
 - `CHAT_NOT_FOUND`
 - `MESSAGE_GENERATION_IN_PROGRESS`
 - `AI_QUOTA_EXHAUSTED`
+- `DATABASE_UNAVAILABLE`
 - `INTERNAL_ERROR`
 
 ### POST /api/chats/:chatId/messages/stream
@@ -422,6 +476,8 @@ type SendMessageRequest = {
   promptProfile?: PromptProfile;
   sourceQuestionId?: string;
   sourceSubQuestionId?: string;
+  clarificationUsed?: boolean;
+  clarifiedTripContext?: ClarifiedTripContext;
 };
 ```
 
@@ -473,6 +529,7 @@ Database behavior:
 - On completion, update the assistant message to `complete` with the full answer and metadata.
 - On failure or interruption, update the assistant message to `failed`.
 - Create an `ai_usage_logs` row when possible.
+- Before streaming starts, database preparation failures return normal JSON errors such as `DATABASE_UNAVAILABLE`.
 
 ## Share APIs
 
@@ -568,6 +625,14 @@ Rules:
 - Treat source as `share`.
 - Attach `shareId` to analytics metadata when available.
 - Client navigates to `/chat/:chatId` after success.
+
+Errors:
+
+- `SHARE_NOT_FOUND`
+- `EMPTY_MESSAGE`
+- `INVALID_LANGUAGE`
+- `DATABASE_UNAVAILABLE`
+- `INTERNAL_ERROR`
 
 ## Profile and Auth APIs
 

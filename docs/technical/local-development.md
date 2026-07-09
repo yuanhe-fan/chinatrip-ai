@@ -5,7 +5,7 @@
 Current phase:
 
 ```text
-Phase 3 RAG knowledge base planning and implementation
+Phase 5 dynamic trip clarification release hardening
 ```
 
 Implemented core loop:
@@ -20,7 +20,7 @@ Home question
 → New user asks from share page
 ```
 
-Phase 3 adds:
+Phases 3-5 add:
 
 ```text
 Knowledge seed files
@@ -30,6 +30,7 @@ Knowledge seed files
 → RAG retrieval
 → DeepSeek answer generation
 → Sources display
+→ Dynamic trip clarification
 ```
 
 ## Requirements
@@ -123,6 +124,25 @@ Start PostgreSQL:
 
 ```bash
 docker compose up -d
+```
+
+Confirm PostgreSQL is running:
+
+```bash
+docker compose ps
+```
+
+If `POST /api/chats` returns `503 DATABASE_UNAVAILABLE`, first check that `.env.local` points to the same port as `docker-compose.yml`. The default local URL is:
+
+```env
+DATABASE_URL="postgresql://chinatrip:chinatrip@localhost:5433/chinatrip_dev"
+```
+
+Then start the database and rerun migrations if needed:
+
+```bash
+docker compose up -d
+pnpm prisma:migrate
 ```
 
 Stop PostgreSQL:

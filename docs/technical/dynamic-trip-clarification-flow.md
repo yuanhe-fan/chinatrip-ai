@@ -288,12 +288,15 @@ UI 要求：
 
 | 场景 | 处理 |
 | --- | --- |
+| 数据库不可用或缺少 `DATABASE_URL` | Chat、message、clarification 准备阶段返回 `DATABASE_UNAVAILABLE` / HTTP 503 |
 | Clarification API 失败 | 前端直接走普通 AI 生成 |
 | Provider 返回非 JSON | 使用兜底问题 |
 | Schema 校验失败 | 使用兜底问题 |
 | 用户取消 | 清空本地 state，不写数据库 |
 | 页面刷新 | 澄清流消失，不恢复 |
 | 最终生成失败 | 使用现有 assistant failed 状态 |
+
+发布收口阶段应避免把可诊断的基础设施错误包装成泛化 `INTERNAL_ERROR`。数据库不可用、Provider 失败、RAG 降级、澄清 schema 失败应分别保留清晰语义，便于本地开发和线上排查。
 
 ## 10. 测试与验收
 
@@ -310,10 +313,11 @@ UI 要求：
 UI 验收：
 
 - `帮我制定北京五日游` 触发澄清流。
-- 用户可以选择、返回修改、取消、最终执行。
+- `Can you help me plan a simple five-day China itinerary?` 不把 China 当具体城市，并且不只询问日期。
+- 用户可以选择、返回修改、取消，并在最后一步直接生成。
 - 完成全部问题后直接生成，不展示 `Trip setup` 摘要页。
 - 信息足够的问题可以跳过澄清直接生成。
-- 移动端问题卡片不溢出。
+- 移动端问题卡片不溢出，日期选择内联展开后页面可以自然滚动到 `Confirm` / `Cancel`。
 
 Harness：
 

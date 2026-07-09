@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { apiError } from "@/lib/api/server";
+import { apiError, isDatabaseUnavailableError } from "@/lib/api/server";
 import {
   CreateChatFromShareRequest,
   CreateChatFromShareResponse,
@@ -145,6 +145,14 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json(response);
   } catch (error) {
     console.error("Failed to create chat from share", error);
+
+    if (isDatabaseUnavailableError(error)) {
+      return apiError(
+        "DATABASE_UNAVAILABLE",
+        "Database is unavailable. Please try again later.",
+        503,
+      );
+    }
 
     return apiError("INTERNAL_ERROR", "Failed to create chat.", 500);
   }
