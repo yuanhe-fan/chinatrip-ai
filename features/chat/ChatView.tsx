@@ -13,11 +13,15 @@ import {
   ChatHistoryResponse,
   CreateClarificationResponse,
   CreateSharedAnswerResponse,
+  RelatedQuestionsResponse,
   LogoutResponse,
   MeResponse,
   SendMessageRequest,
   SendMessageResponse,
   StreamMessageEvent,
+  UpdateAnswerFeedbackResponse,
+  type AnswerFeedbackReason,
+  type AnswerFeedbackReaction,
 } from "@/lib/api/types";
 import {
   getPoiAssetGroup,
@@ -35,6 +39,8 @@ import {
   Menu,
   MoreHorizontal,
   Share2,
+  ThumbsDown,
+  ThumbsUp,
   UserRound,
   X,
 } from "lucide-react";
@@ -110,6 +116,12 @@ type ImagePreviewState = {
   index: number;
 };
 
+function isPersistedMessageId(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value,
+  );
+}
+
 function toChatMessage(message: ChatDetailMessage): ChatMessage {
   return {
     id: message.id,
@@ -132,6 +144,8 @@ function toChatMessage(message: ChatDetailMessage): ChatMessage {
     truncated: message.truncated,
     maybeTruncated: message.maybeTruncated,
     finishReason: message.finishReason,
+    feedback: message.feedback,
+    relatedQuestions: message.relatedQuestions,
   };
 }
 
@@ -166,6 +180,8 @@ function toAssistantChatMessage(
     truncated: message.truncated,
     maybeTruncated: message.maybeTruncated,
     finishReason: message.finishReason,
+    feedback: message.feedback,
+    relatedQuestions: message.relatedQuestions,
   };
 }
 
@@ -917,7 +933,223 @@ function ClarificationFlowPanel({
   );
 }
 
+const FEEDBACK_REASONS: Array<{
+  value: AnswerFeedbackReason;
+  en: string;
+  zh: string;
+}> = [
+  { value: "inaccurate", en: "Inaccurate", zh: "不准确" },
+  { value: "outdated", en: "Outdated", zh: "过时" },
+  { value: "not_specific", en: "Not specific enough", zh: "不够具体" },
+  { value: "not_helpful", en: "Didn't solve it", zh: "没有解决问题" },
+  { value: "hard_to_understand", en: "Hard to understand", zh: "表达难懂" },
+];
+
+function AnswerEngagementPanel({
+  messageId,
+  language,
+  feedback,
+  relatedQuestions,
+  isLoadingRelatedQuestions,
+  isRelatedQuestionDisabled,
+  onFeedback,
+  onRelatedQuestion,
+}: {
+  messageId: string;
+  language: MockChat["language"];
+  feedback?: ChatMessage["feedback"];
+  relatedQuestions?: string[];
+  isLoadingRelatedQuestions: boolean;
+  isRelatedQuestionDisabled: boolean;
+  onFeedback: (
+    messageId: string,
+    reaction: AnswerFeedbackReaction,
+    reason?: AnswerFeedbackReason,
+    comment?: string,
+  ) => Promise<boolean>;
+  onRelatedQuestion: (question: string) => void;
+}) {
+  const isChinese = language === "zh";
+  const [draftReaction, setDraftReaction] = useState<
+    AnswerFeedbackReaction | undefined
+  >();
+  const [draftReason, setDraftReason] = useState<
+    AnswerFeedbackReason | undefined
+  >();
+  const [draftComment, setDraftComment] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState(false);
+  const isSubmitted = Boolean(feedback);
+  const selectedReaction = feedback?.reaction ?? draftReaction;
+
+  async function submitFeedback(
+    nextReaction: AnswerFeedbackReaction,
+    nextReason?: AnswerFeedbackReason,
+    nextComment = "",
+  ) {
+    if (isSaving || isSubmitted) {
+      return;
+    }
+
+    setSaveError(false);
+    setIsSaving(true);
+    const saved = await onFeedback(
+      messageId,
+      nextReaction,
+      nextReaction === "down" ? nextReason : undefined,
+      nextReaction === "down" ? nextComment : undefined,
+    );
+    setIsSaving(false);
+
+    if (!saved) {
+      setSaveError(true);
+    }
+  }
+
+  function selectDownFeedback() {
+    if (isSaving || isSubmitted || draftReaction === "down") {
+      return;
+    }
+
+    setDraftReaction("down");
+    setSaveError(false);
+  }
+
+  return (
+    <div className="mt-6 space-y-4 border-t border-[#E6D8C7]/70 pt-4">
+      {isLoadingRelatedQuestions || relatedQuestions?.length ? (
+        <div className="space-y-2.5">
+          <p className="text-xs font-extrabold uppercase tracking-[0.1em] text-[#8A552B]">
+            {isChinese ? "继续了解" : "Explore next"}
+          </p>
+          {isLoadingRelatedQuestions && !relatedQuestions?.length ? (
+            <div className="flex gap-2" aria-label="Generating related questions">
+              {[0, 1].map((index) => (
+                <span key={index} className="h-9 w-40 animate-pulse rounded-xl bg-[#EEF4F6]" />
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {relatedQuestions?.map((question) => (
+                <button
+                  key={question}
+                  type="button"
+                  disabled={isRelatedQuestionDisabled}
+                  onClick={() => onRelatedQuestion(question)}
+                  className="inline-flex min-h-9 items-center gap-2 rounded-xl border border-[#E6D8C7] bg-[#FFFDF9] px-3 py-2 text-left text-sm font-semibold leading-5 text-[#26384D] transition hover:border-[#D49A52] hover:bg-[#FFF8EF] disabled:cursor-not-allowed disabled:opacity-55"
+                >
+                  {question}
+                  <ArrowRight className="h-3.5 w-3.5 shrink-0 text-[#8A552B]" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : null}
+
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="mr-1 text-sm font-semibold text-[#74685C]">
+            {isChinese ? "这个回答有帮助吗？" : "Was this answer helpful?"}
+          </span>
+          {(["up", "down"] as const).map((value) => {
+            const selected = selectedReaction === value;
+            const Icon = value === "up" ? ThumbsUp : ThumbsDown;
+            return (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={selected}
+                aria-label={value === "up" ? "Helpful" : "Not helpful"}
+                disabled={
+                  isSaving || isSubmitted || draftReaction === value
+                }
+                onClick={() => {
+                  if (value === "up") {
+                    void submitFeedback("up");
+                    return;
+                  }
+
+                  selectDownFeedback();
+                }}
+                className={`inline-flex h-9 w-9 items-center justify-center rounded-xl border transition disabled:cursor-not-allowed ${
+                  selected
+                    ? "border-[#D49A52] bg-[#FFF8EF] text-[#8A552B] opacity-100 ring-1 ring-[#D49A52]/30"
+                    : "border-[#E6D8C7] bg-white text-[#74685C] hover:border-[#D49A52] hover:text-[#8A552B] disabled:opacity-50"
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+              </button>
+            );
+          })}
+          {isSaving ? <span className="text-xs text-[#9A8D80]">Saving…</span> : null}
+          {isSubmitted ? (
+            <span className="text-xs font-semibold text-emerald-700">
+              {isChinese ? "感谢你的反馈" : "Thanks for your feedback"}
+            </span>
+          ) : null}
+          {saveError ? (
+            <span className="text-xs font-semibold text-red-600">
+              {isChinese ? "保存失败，请重试" : "Could not save. Try again."}
+            </span>
+          ) : null}
+        </div>
+
+        {!isSubmitted && selectedReaction === "down" ? (
+          <div className="space-y-3 rounded-2xl border border-[#E6D8C7] bg-[#FFFDF9]/80 p-3.5">
+            <div className="flex flex-wrap gap-2">
+              {FEEDBACK_REASONS.map((item) => (
+                <button
+                  key={item.value}
+                  type="button"
+                  disabled={isSaving}
+                  onClick={() => {
+                    setDraftReason(item.value);
+                    setSaveError(false);
+                  }}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-bold transition ${
+                    draftReason === item.value
+                      ? "border-[#D49A52] bg-[#FFF8EF] text-[#8A552B]"
+                      : "border-[#E6D8C7] bg-white text-[#74685C] hover:border-[#D49A52]"
+                  }`}
+                >
+                  {isChinese ? item.zh : item.en}
+                </button>
+              ))}
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <textarea
+                value={draftComment}
+                maxLength={500}
+                disabled={isSaving}
+                onChange={(event) => {
+                  setDraftComment(event.target.value);
+                  setSaveError(false);
+                }}
+                placeholder={isChinese ? "补充说明（可选）" : "Add details (optional)"}
+                className="min-h-20 flex-1 resize-none rounded-xl border border-[#E6D8C7] bg-white px-3 py-2 text-sm outline-none focus:border-[#D49A52] focus:ring-2 focus:ring-[#D49A52]/20"
+              />
+              <button
+                type="button"
+                disabled={isSaving}
+                onClick={() =>
+                  void submitFeedback("down", draftReason, draftComment)
+                }
+                className="h-10 rounded-xl bg-[linear-gradient(135deg,#8A552B,#14243A)] px-4 text-sm font-bold text-[#FFF8EF] disabled:opacity-60 sm:self-end"
+              >
+                {isChinese ? "保存" : "Save"}
+              </button>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 function AssistantMessageBubble({
+  messageId,
+  language,
   status,
   content,
   visuals,
@@ -933,7 +1165,15 @@ function AssistantMessageBubble({
   onQuickSubQuestion,
   onOpenImage,
   isSharing,
+  feedback,
+  relatedQuestions,
+  isLoadingRelatedQuestions,
+  isRelatedQuestionDisabled,
+  onFeedback,
+  onRelatedQuestion,
 }: {
+  messageId: string;
+  language: MockChat["language"];
   status?: ChatMessage["status"];
   content: string;
   visuals?: ChatMessage["visuals"];
@@ -952,6 +1192,17 @@ function AssistantMessageBubble({
   ) => void;
   onOpenImage: (asset: AnswerAsset) => void;
   isSharing: boolean;
+  feedback?: ChatMessage["feedback"];
+  relatedQuestions?: string[];
+  isLoadingRelatedQuestions: boolean;
+  isRelatedQuestionDisabled: boolean;
+  onFeedback: (
+    messageId: string,
+    reaction: AnswerFeedbackReaction,
+    reason?: AnswerFeedbackReason,
+    comment?: string,
+  ) => Promise<boolean>;
+  onRelatedQuestion: (question: string) => void;
 }) {
   const isLoading = status === "loading";
   const isFailed = status === "failed";
@@ -1117,21 +1368,33 @@ function AssistantMessageBubble({
                 </div>
               ) : null}
               {quickQuestionMenu ? null : (
-                <div className="mt-6 flex flex-wrap gap-2 border-t border-[#E6D8C7]/70 pt-4">
-                  <MessageActionButton
-                    Icon={Share2}
-                    label={isSharing ? "Sharing..." : "Share"}
-                    tone="share"
-                    onClick={onShare}
-                    disabled={isSharing}
+                <>
+                  <AnswerEngagementPanel
+                    messageId={messageId}
+                    language={language}
+                    feedback={feedback}
+                    relatedQuestions={relatedQuestions}
+                    isLoadingRelatedQuestions={isLoadingRelatedQuestions}
+                    isRelatedQuestionDisabled={isRelatedQuestionDisabled}
+                    onFeedback={onFeedback}
+                    onRelatedQuestion={onRelatedQuestion}
                   />
-                  <MessageActionButton
-                    Icon={Copy}
-                    label="Copy"
-                    tone="copy"
-                    onClick={(event) => onCopy(content, event)}
-                  />
-                </div>
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    <MessageActionButton
+                      Icon={Share2}
+                      label={isSharing ? "Sharing..." : "Share"}
+                      tone="share"
+                      onClick={onShare}
+                      disabled={isSharing}
+                    />
+                    <MessageActionButton
+                      Icon={Copy}
+                      label="Copy"
+                      tone="copy"
+                      onClick={(event) => onCopy(content, event)}
+                    />
+                  </div>
+                </>
               )}
             </>
           )}
@@ -1143,6 +1406,7 @@ function AssistantMessageBubble({
 
 function MessageItem({
   message,
+  language,
   user,
   onCopy,
   onShare,
@@ -1150,8 +1414,13 @@ function MessageItem({
   onQuickSubQuestion,
   onOpenImage,
   sharingMessageId,
+  relatedQuestionsLoadingIds,
+  isRelatedQuestionDisabled,
+  onFeedback,
+  onRelatedQuestion,
 }: {
   message: ChatMessage;
+  language: MockChat["language"];
   user: MeResponse["user"];
   onCopy: (content: string, event: MouseEvent<HTMLButtonElement>) => void;
   onShare: (
@@ -1165,6 +1434,15 @@ function MessageItem({
   ) => void;
   onOpenImage: (asset: AnswerAsset) => void;
   sharingMessageId: string | null;
+  relatedQuestionsLoadingIds: Set<string>;
+  isRelatedQuestionDisabled: boolean;
+  onFeedback: (
+    messageId: string,
+    reaction: AnswerFeedbackReaction,
+    reason?: AnswerFeedbackReason,
+    comment?: string,
+  ) => Promise<boolean>;
+  onRelatedQuestion: (question: string) => void;
 }) {
   if (message.role === "user") {
     return <UserMessageBubble content={message.content} user={user} />;
@@ -1172,6 +1450,8 @@ function MessageItem({
 
   return (
     <AssistantMessageBubble
+      messageId={message.id}
+      language={language}
       status={message.status}
       content={message.content}
       visuals={message.visuals}
@@ -1187,6 +1467,12 @@ function MessageItem({
       onQuickSubQuestion={onQuickSubQuestion}
       onOpenImage={onOpenImage}
       isSharing={sharingMessageId === message.id}
+      feedback={message.feedback}
+      relatedQuestions={message.relatedQuestions}
+      isLoadingRelatedQuestions={relatedQuestionsLoadingIds.has(message.id)}
+      isRelatedQuestionDisabled={isRelatedQuestionDisabled}
+      onFeedback={onFeedback}
+      onRelatedQuestion={onRelatedQuestion}
     />
   );
 }
@@ -1279,6 +1565,7 @@ export function ChatView({
       ? {
         id: initialDetail.chat.id,
         title: initialDetail.chat.title,
+        language: initialDetail.chat.language,
         messages: initialDetail.messages.map(toChatMessage),
         nextCursor: initialDetail.nextCursor,
       }
@@ -1296,6 +1583,8 @@ export function ChatView({
     ReturnType<typeof setInterval>[]
   >([]);
   const streamBuffersRef = useRef(new Map<string, StreamBuffer>());
+  const relatedQuestionsRequestedRef = useRef(new Set<string>());
+  const initialGenerationStartedChatIdsRef = useRef(new Set<string>());
   const lastAutoScrollAtRef = useRef(0);
   const loadedChatDetailsRef = useRef(
     new Map<string, MockChat>(initialChat ? [[initialChat.id, initialChat]] : []),
@@ -1311,6 +1600,9 @@ export function ChatView({
   const [isGenerating, setIsGenerating] = useState(false);
   const [message, setMessage] = useState("");
   const [sharingMessageId, setSharingMessageId] = useState<string | null>(null);
+  const [relatedQuestionsLoadingIds, setRelatedQuestionsLoadingIds] = useState(
+    () => new Set<string>(),
+  );
   const [activeClarificationFlow, setActiveClarificationFlow] =
     useState<ActiveClarificationFlow | null>(null);
   const [isLoadingClarification, setIsLoadingClarification] = useState(false);
@@ -1953,6 +2245,7 @@ export function ChatView({
               ),
             }));
             updateHistoryPreview(targetChatId, assistantMessage.content);
+            void requestRelatedQuestions(targetChatId, assistantMessage.id);
           }
 
           if (event.type === "error") {
@@ -2062,6 +2355,26 @@ export function ChatView({
   }, [chat]);
 
   useEffect(() => {
+    if (!chat || isGenerating || isLoadingChatDetail) {
+      return;
+    }
+
+    const latestMessage = chat.messages.at(-1);
+
+    if (
+      latestMessage?.role === "assistant" &&
+      latestMessage.status === "complete" &&
+      !latestMessage.quickQuestionMenu &&
+      !latestMessage.relatedQuestions &&
+      isPersistedMessageId(latestMessage.id)
+    ) {
+      void requestRelatedQuestions(chat.id, latestMessage.id);
+    }
+    // requestRelatedQuestions deduplicates per message for the current page session.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chat, isGenerating, isLoadingChatDetail]);
+
+  useEffect(() => {
     if (initialHistory.chats.length > 0) {
       return;
     }
@@ -2143,6 +2456,7 @@ export function ChatView({
         setChatAndCache({
           id: chatResponse.chat.id,
           title: chatResponse.chat.title,
+          language: chatResponse.chat.language,
           messages: chatResponse.messages.map(toChatMessage),
           nextCursor: chatResponse.nextCursor,
         });
@@ -2201,6 +2515,11 @@ export function ChatView({
       return;
     }
 
+    if (initialGenerationStartedChatIdsRef.current.has(chat.id)) {
+      return;
+    }
+
+    initialGenerationStartedChatIdsRef.current.add(chat.id);
     lastCompletedDetailReasonRef.current = null;
 
     if (isItineraryPlanningRequest(firstUserMessage.content)) {
@@ -2647,6 +2966,95 @@ export function ChatView({
     void copyText(content, "Copied", event.currentTarget);
   }
 
+  async function requestRelatedQuestions(
+    targetChatId: string,
+    assistantMessageId: string,
+  ) {
+    if (relatedQuestionsRequestedRef.current.has(assistantMessageId)) {
+      return;
+    }
+
+    relatedQuestionsRequestedRef.current.add(assistantMessageId);
+    setRelatedQuestionsLoadingIds((current) => {
+      const next = new Set(current);
+      next.add(assistantMessageId);
+      return next;
+    });
+
+    try {
+      const response = await apiFetch<RelatedQuestionsResponse>(
+        `/chats/${targetChatId}/messages/${assistantMessageId}/related-questions`,
+        { method: "POST" },
+      );
+
+      if (response.relatedQuestions.length > 0) {
+        updateChatByIdAndCache(targetChatId, (currentChat) => ({
+          ...currentChat,
+          messages: currentChat.messages.map((chatMessage) =>
+            chatMessage.id === assistantMessageId
+              ? {
+                  ...chatMessage,
+                  relatedQuestions: response.relatedQuestions,
+                }
+              : chatMessage,
+          ),
+        }));
+      }
+    } catch {
+      // Related questions are optional and must not affect the completed answer.
+    } finally {
+      setRelatedQuestionsLoadingIds((current) => {
+        const next = new Set(current);
+        next.delete(assistantMessageId);
+        return next;
+      });
+    }
+  }
+
+  async function handleAnswerFeedback(
+    assistantMessageId: string,
+    reaction: AnswerFeedbackReaction,
+    reason?: AnswerFeedbackReason,
+    comment?: string,
+  ) {
+    const targetChatId = activeChatId;
+
+    try {
+      const response = await apiFetch<UpdateAnswerFeedbackResponse>(
+        `/chats/${targetChatId}/messages/${assistantMessageId}/feedback`,
+        {
+          method: "PUT",
+          body: { reaction, reason, comment },
+        },
+      );
+
+      updateChatByIdAndCache(targetChatId, (currentChat) => ({
+        ...currentChat,
+        messages: currentChat.messages.map((chatMessage) =>
+          chatMessage.id === assistantMessageId
+            ? { ...chatMessage, feedback: response.feedback }
+            : chatMessage,
+        ),
+      }));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function handleRelatedQuestion(question: string) {
+    if (
+      isGenerating ||
+      isLoadingClarification ||
+      activeClarificationFlow ||
+      !chat
+    ) {
+      return;
+    }
+
+    submitMessageDirect(question.trim());
+  }
+
   async function handleShare(
     assistantMessage: ChatMessage,
     event: MouseEvent<HTMLButtonElement>,
@@ -2872,6 +3280,7 @@ export function ChatView({
                       >
                         <MessageItem
                           message={chatMessage}
+                          language={chat.language}
                           user={user}
                           onCopy={handleCopy}
                           onShare={handleShare}
@@ -2879,6 +3288,14 @@ export function ChatView({
                           onQuickSubQuestion={handleQuickSubQuestion}
                           onOpenImage={handleOpenImagePreview}
                           sharingMessageId={sharingMessageId}
+                          relatedQuestionsLoadingIds={relatedQuestionsLoadingIds}
+                          isRelatedQuestionDisabled={
+                            isGenerating ||
+                            isLoadingClarification ||
+                            Boolean(activeClarificationFlow)
+                          }
+                          onFeedback={handleAnswerFeedback}
+                          onRelatedQuestion={handleRelatedQuestion}
                         />
                       </div>
                     );

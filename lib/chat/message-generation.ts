@@ -8,6 +8,7 @@ import {
   readAnswerSources,
   readAnswerVisuals,
   readQuickQuestionMenu,
+  readRelatedQuestions,
 } from "@/lib/messages/metadata";
 import {
   parseClarifiedTripContext,
@@ -120,6 +121,7 @@ export function serializeAssistantMessage(message: ChatMessageRecord) {
     visuals: readAnswerVisuals(message.metadata),
     sources: readAnswerSources(message.metadata),
     quickQuestionMenu: readQuickQuestionMenu(message.metadata),
+    relatedQuestions: readRelatedQuestions(message.metadata),
     truncated: completionStatus.truncated,
     maybeTruncated: completionStatus.maybeTruncated,
     finishReason: completionStatus.finishReason,

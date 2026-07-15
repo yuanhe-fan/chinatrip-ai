@@ -1,4 +1,8 @@
-import type { AnswerSource, AnswerVisuals } from "@/lib/api/types";
+import type {
+  AnswerFeedback,
+  AnswerSource,
+  AnswerVisuals,
+} from "@/lib/api/types";
 import type {
   ClarificationFlow,
   ClarifiedTripContext,
@@ -25,6 +29,8 @@ export type ChatMessage = {
   truncated?: boolean;
   maybeTruncated?: boolean;
   finishReason?: string | null;
+  feedback?: AnswerFeedback;
+  relatedQuestions?: string[];
   progress?: number;
   loadingLabel?: string;
 };
@@ -47,6 +53,7 @@ export type ClarificationSubmission = {
 export type MockChat = {
   id: string;
   title: string;
+  language: "en" | "zh";
   messages: ChatMessage[];
   nextCursor?: string | null;
 };
@@ -120,6 +127,7 @@ export function createInitialMockChat(question: string): MockChat {
   return {
     id: "mock",
     title: createChatTitle(firstQuestion),
+    language: "en",
     messages: createLargeMockMessages(firstQuestion),
   };
 }

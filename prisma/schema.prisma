@@ -37,6 +37,19 @@ enum AiProvider {
   deepseek
 }
 
+enum AnswerFeedbackReaction {
+  up
+  down
+}
+
+enum AnswerFeedbackReason {
+  inaccurate
+  outdated
+  not_specific
+  not_helpful
+  hard_to_understand
+}
+
 enum KnowledgeDocumentStatus {
   active
   archived
@@ -60,6 +73,7 @@ model Profile {
 
   chats         Chat[]
   sharedAnswers SharedAnswer[]
+  answerFeedback AnswerFeedback[]
 
   @@map("profiles")
 }
@@ -73,6 +87,7 @@ model AnonymousSession {
 
   chats         Chat[]
   sharedAnswers SharedAnswer[]
+  answerFeedback AnswerFeedback[]
 
   @@map("anonymous_sessions")
 }
@@ -117,10 +132,33 @@ model Message {
   sharedAsUserMessage      SharedAnswer[] @relation("SharedAnswerUserMessage")
   sharedAsAssistantMessage SharedAnswer[] @relation("SharedAnswerAssistantMessage")
   aiUsageLogs              AiUsageLog[]
+  answerFeedback           AnswerFeedback[]
 
   @@unique([chatId, sequence])
   @@index([chatId, createdAt])
   @@map("messages")
+}
+
+model AnswerFeedback {
+  id                 String                 @id @default(uuid()) @db.Uuid
+  assistantMessageId String                 @map("assistant_message_id") @db.Uuid
+  profileId          String?                @map("profile_id") @db.Uuid
+  anonymousSessionId String?                @map("anonymous_session_id") @db.Uuid
+  reaction           AnswerFeedbackReaction
+  reason             AnswerFeedbackReason?
+  comment            String?
+  createdAt          DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime               @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  assistantMessage Message           @relation(fields: [assistantMessageId], references: [id], onDelete: Cascade)
+  profile          Profile?          @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  anonymousSession AnonymousSession? @relation(fields: [anonymousSessionId], references: [id], onDelete: Cascade)
+
+  @@unique([assistantMessageId, profileId])
+  @@unique([assistantMessageId, anonymousSessionId])
+  @@index([assistantMessageId, createdAt])
+  @@index([reaction, reason, createdAt])
+  @@map("answer_feedback")
 }
 
 model SharedAnswer {

@@ -84,6 +84,24 @@ export function readAnswerSources(metadata: unknown): AnswerSource[] | undefined
   return sources.length > 0 ? sources : undefined;
 }
 
+export function readRelatedQuestions(metadata: unknown): string[] | undefined {
+  if (!isRecord(metadata) || !Array.isArray(metadata.relatedQuestions)) {
+    return undefined;
+  }
+
+  const questions = metadata.relatedQuestions
+    .filter(
+      (question): question is string =>
+        typeof question === "string" &&
+        question.trim().length >= 3 &&
+        question.trim().length <= 160,
+    )
+    .map((question) => question.trim())
+    .slice(0, 3);
+
+  return questions.length > 0 ? questions : undefined;
+}
+
 export function readPromptProfile(metadata: unknown) {
   if (!isRecord(metadata)) {
     return undefined;

@@ -24,6 +24,21 @@ export type AnswerSource = {
   updatedAt: string | null;
 };
 
+export type AnswerFeedbackReaction = "up" | "down";
+export type AnswerFeedbackReason =
+  | "inaccurate"
+  | "outdated"
+  | "not_specific"
+  | "not_helpful"
+  | "hard_to_understand";
+
+export type AnswerFeedback = {
+  reaction: AnswerFeedbackReaction;
+  reason: AnswerFeedbackReason | null;
+  comment: string | null;
+  updatedAt: string;
+};
+
 export type CreateChatRequest = {
   message: string;
   language?: "en" | "zh";
@@ -73,6 +88,8 @@ export type ChatDetailMessage = {
   truncated?: boolean;
   maybeTruncated?: boolean;
   finishReason?: string | null;
+  feedback?: AnswerFeedback;
+  relatedQuestions?: string[];
   createdAt: string;
   updatedAt: string;
 };
@@ -142,6 +159,8 @@ export type SendMessageResponse = {
     truncated?: boolean;
     maybeTruncated?: boolean;
     finishReason?: string | null;
+    feedback?: AnswerFeedback;
+    relatedQuestions?: string[];
     createdAt: string;
     updatedAt: string;
   };
@@ -252,6 +271,20 @@ export type CreateClarificationRequest = {
 };
 
 export type CreateClarificationResponse = ClarificationFlow;
+
+export type UpdateAnswerFeedbackRequest = {
+  reaction: AnswerFeedbackReaction;
+  reason?: AnswerFeedbackReason;
+  comment?: string;
+};
+
+export type UpdateAnswerFeedbackResponse = {
+  feedback: AnswerFeedback;
+};
+
+export type RelatedQuestionsResponse = {
+  relatedQuestions: string[];
+};
 
 export type MeResponse = {
   user: {

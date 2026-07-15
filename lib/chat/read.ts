@@ -21,6 +21,7 @@ import {
   readAnswerSources,
   readAnswerVisuals,
   readQuickQuestionMenu,
+  readRelatedQuestions,
 } from "@/lib/messages/metadata";
 import { prisma } from "@/lib/prisma";
 
@@ -102,6 +103,18 @@ function serializeMessage(message: {
   errorCode: string | null;
   errorMessage: string | null;
   metadata: unknown;
+  answerFeedback?: Array<{
+    reaction: "up" | "down";
+    reason:
+      | "inaccurate"
+      | "outdated"
+      | "not_specific"
+      | "not_helpful"
+      | "hard_to_understand"
+      | null;
+    comment: string | null;
+    updatedAt: Date;
+  }>;
   createdAt: Date;
   updatedAt: Date;
 }): ChatDetailMessage {
@@ -134,6 +147,19 @@ function serializeMessage(message: {
     quickQuestionMenu:
       message.role === "assistant"
         ? readQuickQuestionMenu(message.metadata)
+        : undefined,
+    feedback:
+      message.role === "assistant" && message.answerFeedback?.[0]
+        ? {
+            reaction: message.answerFeedback[0].reaction,
+            reason: message.answerFeedback[0].reason,
+            comment: message.answerFeedback[0].comment,
+            updatedAt: message.answerFeedback[0].updatedAt.toISOString(),
+          }
+        : undefined,
+    relatedQuestions:
+      message.role === "assistant"
+        ? readRelatedQuestions(message.metadata)
         : undefined,
     truncated: completionStatus?.truncated,
     maybeTruncated: completionStatus?.maybeTruncated,
@@ -257,6 +283,19 @@ export async function readChatDetail(
         },
         orderBy: [{ sequence: "desc" }, { createdAt: "desc" }],
         take: limit + 1,
+        include: {
+          answerFeedback: {
+            where: identity.profile
+              ? { profileId: identity.profile.id }
+              : { anonymousSessionId: identity.anonymousSession.id },
+            select: {
+              reaction: true,
+              reason: true,
+              comment: true,
+              updatedAt: true,
+            },
+          },
+        },
       },
     },
   });

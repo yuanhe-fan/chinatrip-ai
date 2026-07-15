@@ -211,6 +211,31 @@ Rules:
 - Successful and failed AI requests should both be logged when possible.
 - `metadata` may store prompt profile, retrieval status, hit count, embedding provider/model, retrieval latency, and source ids.
 
+### answer_feedback
+
+Stores one private quality reaction per completed assistant answer and viewer.
+
+```text
+id
+assistant_message_id
+profile_id
+anonymous_session_id
+reaction
+reason
+comment
+created_at
+updated_at
+```
+
+Rules:
+
+- Exactly one of `profile_id` and `anonymous_session_id` must be present.
+- The same signed-in profile or anonymous session can submit only one immutable feedback record for one assistant message.
+- Identical retries are idempotent; attempts to change a submitted reaction, reason, or comment are rejected by the API.
+- `reaction` is `up` or `down`; a negative reason and comment are optional, and comments are limited to 500 characters by the API.
+- Feedback is private quality data. It is not copied to public shares or injected into AI/RAG prompts.
+- Deleting the assistant message cascades to its feedback records.
+
 ## RAG Tables
 
 ### knowledge_documents
