@@ -3,9 +3,6 @@
 :root {
   --background: #14243a;
   --foreground: #16201b;
-  --app-canvas-background:
-    linear-gradient(to bottom, rgb(5 16 31 / 0.34), rgb(5 16 31 / 0.06), rgb(5 16 31 / 0.36)),
-    url("/home-great-wall.png");
 }
 
 @theme inline {
@@ -23,11 +20,6 @@ html,
 body {
   min-height: 100%;
   background-color: var(--background);
-  background-image: var(--app-canvas-background);
-  background-position: center center;
-  background-repeat: no-repeat;
-  background-size: cover;
-  background-attachment: fixed;
 }
 
 body {
@@ -66,12 +58,18 @@ body {
   padding-bottom: max(env(safe-area-inset-bottom), 2rem);
 }
 
-:where(.app-immersive-bg) {
+:where(.chat-background) {
   background-color: var(--background);
-  background-image: url("/home-great-wall.png");
+  background-image: url("/home-great-wall-1600.avif");
   background-position: center center;
   background-repeat: no-repeat;
   background-size: cover;
+}
+
+@media (max-width: 767px) {
+  :where(.chat-background) {
+    background-image: url("/home-great-wall-768.avif");
+  }
 }
 
 button,

@@ -1,13 +1,12 @@
 import { z } from "zod";
 
 export const CLARIFICATION_PROMPT_VERSION =
-  "trip-clarification-v1-ephemeral-context";
+  "trip-clarification-v2-preference-first";
 
 export const clarificationQuestionTypeSchema = z.enum([
   "single_choice",
   "multi_choice",
   "text",
-  "date_time",
 ]);
 
 export const clarificationOptionSchema = z.object({
@@ -49,7 +48,7 @@ export const clarificationQuestionSchema = z
     allowOther: z.boolean().optional(),
   })
   .superRefine((question, context) => {
-    if (question.type === "text" || question.type === "date_time") {
+    if (question.type === "text") {
       return;
     }
 
@@ -70,7 +69,7 @@ export const clarificationFlowSchema = z
     needsClarification: z.boolean(),
     reason: z.string().trim().min(1).max(300),
     extractedContext: clarifiedTripContextSchema.default({}),
-    questions: z.array(clarificationQuestionSchema).max(6),
+    questions: z.array(clarificationQuestionSchema).max(5),
   })
   .superRefine((flow, context) => {
     if (flow.needsClarification && flow.questions.length === 0) {
@@ -128,12 +127,11 @@ export function createFallbackClarificationFlow(
       type: "multi_choice",
       required: true,
       options: [
-        { label: "History", value: "history" },
-        { label: "Food", value: "food" },
-        { label: "Pandas", value: "pandas" },
-        { label: "Modern city", value: "modern city" },
-        { label: "Nature", value: "nature" },
-        { label: "Shopping", value: "shopping" },
+        { label: "History & culture", value: "history" },
+        { label: "Food & local life", value: "food" },
+        { label: "Nature & scenery", value: "nature" },
+        { label: "Modern city & shopping", value: "shopping" },
+        { label: "Family activities", value: "family activities" },
       ],
       allowOther: true,
     });
@@ -147,8 +145,9 @@ export function createFallbackClarificationFlow(
       options: [
         { label: "Solo", value: "solo" },
         { label: "Couple", value: "couple" },
-        { label: "Family", value: "family" },
         { label: "Friends", value: "friends" },
+        { label: "Family with children", value: "family with children" },
+        { label: "With seniors", value: "with seniors" },
       ],
       allowOther: true,
     });
@@ -166,62 +165,40 @@ export function createFallbackClarificationFlow(
       ],
     });
   };
-
-  if (!extractedContext.destination && !extractedContext.days) {
-    questions.push({
-      id: "destination_and_days",
-      title: "Which city and how many days should I plan for?",
-      description:
-        "Add the city, number of days, and any timing details you already know.",
-      type: "text",
-      required: true,
-    });
-  } else if (!extractedContext.destination) {
-    addDestinationQuestion();
-
-    if (!extractedContext.interests?.length) {
-      addInterestsQuestion();
-    }
-
-    if (!extractedContext.travelers) {
-      addTravelersQuestion();
-    }
-
-    if (!extractedContext.pace) {
-      addPaceQuestion();
-    }
-  } else if (!extractedContext.days) {
+  const addDaysQuestion = () => {
     questions.push({
       id: "days",
       title: "How many days should I plan for?",
-      type: "text",
+      type: "single_choice",
       required: true,
+      options: [
+        { label: "1 day", value: "1" },
+        { label: "2 days", value: "2" },
+        { label: "3 days", value: "3" },
+        { label: "4–5 days", value: "5" },
+        { label: "6–7 days", value: "7" },
+      ],
+      allowOther: true,
     });
-  } else if (!extractedContext.arrivalTime || !extractedContext.departureTime) {
-    if (!extractedContext.arrivalTime) {
-      questions.push({
-        id: "arrival_time",
-        title: "When will you arrive?",
-        description: "Choose the date you expect to start the itinerary.",
-        type: "date_time",
-        required: true,
-      });
-    }
+  };
 
-    if (!extractedContext.departureTime) {
-      questions.push({
-        id: "departure_time",
-        title: "When will you leave?",
-        description: "Choose the date you need the itinerary to end.",
-        type: "date_time",
-        required: true,
-      });
-    }
-  } else if (!extractedContext.travelers) {
+  if (!extractedContext.destination) {
+    addDestinationQuestion();
+  }
+
+  if (!extractedContext.days) {
+    addDaysQuestion();
+  }
+
+  if (!extractedContext.travelers) {
     addTravelersQuestion();
-  } else if (!extractedContext.pace) {
+  }
+
+  if (!extractedContext.pace) {
     addPaceQuestion();
-  } else if (!extractedContext.interests?.length) {
+  }
+
+  if (!extractedContext.interests?.length) {
     addInterestsQuestion();
   }
 
@@ -241,6 +218,6 @@ export function createFallbackClarificationFlow(
     reason:
       "Clarification generation fell back to a context-aware safe question.",
     extractedContext,
-    questions,
+    questions: questions.slice(0, 5),
   };
 }

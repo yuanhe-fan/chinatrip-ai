@@ -3,8 +3,6 @@
 import { ChatInput } from "@/components/ChatInput";
 import { AnswerContent } from "@/components/AnswerContent";
 import { AnswerSources } from "@/components/AnswerSources";
-import { ImagePreviewOverlay } from "@/components/ImagePreviewOverlay";
-import { LoginModal } from "@/components/LoginModal";
 import { UserProfileAvatar } from "@/components/UserProfileAvatar";
 import { ApiClientError, apiFetch } from "@/lib/api/client";
 import { useCurrentUser } from "@/features/auth/use-current-user";
@@ -25,13 +23,10 @@ import {
   getPoiAssetGroup,
   type AnswerAsset,
 } from "@/lib/answer-assets/registry";
-import { DayPicker, type ClassNames } from "@daypicker/react";
-import { zhCN } from "@daypicker/react/locale/zh-CN";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   AlertTriangle,
   ArrowRight,
-  CalendarClock,
   Check,
   CirclePlus,
   Copy,
@@ -46,6 +41,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import {
   ComponentType,
   KeyboardEvent,
@@ -64,6 +60,17 @@ import {
   createMessage,
 } from "./mock-chat";
 
+const ImagePreviewOverlay = dynamic(
+  () =>
+    import("@/components/ImagePreviewOverlay").then(
+      (module) => module.ImagePreviewOverlay,
+    ),
+  { ssr: false },
+);
+const LoginModal = dynamic(
+  () => import("@/components/LoginModal").then((module) => module.LoginModal),
+  { ssr: false },
+);
 const CHAT_DETAIL_LOADING_AFTER_RESPONSE_MS = 1000;
 const GENERATION_DONE_HOLD_MS = 250;
 const GENERATION_PROGRESS_INTERVAL_MS = 180;
@@ -71,6 +78,7 @@ const STREAM_TYPEWRITER_INTERVAL_MS = 34;
 const STREAM_SCROLL_THROTTLE_MS = 120;
 const STREAM_BOTTOM_THRESHOLD_PX = 96;
 const FORCE_BOTTOM_SECOND_PASS_DELAY_MS = 100;
+const CLARIFICATION_SINGLE_CHOICE_DELAY_MS = 350;
 const AI_QUOTA_EXHAUSTED_CODE = "AI_QUOTA_EXHAUSTED";
 const AI_QUOTA_EXHAUSTED_MESSAGE =
   "Today's AI usage has been used up. Please come back tomorrow.";
@@ -213,7 +221,7 @@ function BotBadge({ className = "" }: { className?: string }) {
       className={`h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full ${ASSISTANT_AVATAR_SURFACE_CLASS} ${className}`}
     >
       <Image
-        src="/logo-img.png"
+        src="/logo-96.webp"
         alt="ChinaTrip AI"
         width={36}
         height={36}
@@ -262,7 +270,7 @@ function Sidebar({
           aria-label="ChinaTrip AI home"
         >
           <Image
-            src="/logo-img.png"
+            src="/logo-96.webp"
             alt="ChinaTrip AI logo"
             width={40}
             height={40}
@@ -630,20 +638,6 @@ function mergeClarifiedTripContext(
       continue;
     }
 
-    if (/arrival|arrive|抵达|到达/i.test(question.id + question.title)) {
-      context.arrivalTime = Array.isArray(normalizedAnswer)
-        ? normalizedAnswer.join(", ")
-        : normalizedAnswer;
-      continue;
-    }
-
-    if (/departure|depart|leave|leaving|离开|返程/i.test(question.id + question.title)) {
-      context.departureTime = Array.isArray(normalizedAnswer)
-        ? normalizedAnswer.join(", ")
-        : normalizedAnswer;
-      continue;
-    }
-
     if (/traveler|people|companion|同行|老人|kid|family/i.test(question.id + question.title)) {
       context.travelers = Array.isArray(normalizedAnswer)
         ? normalizedAnswer.join(", ")
@@ -701,229 +695,10 @@ function hasCjkText(value: string) {
   return /[\u3400-\u9FFF]/.test(value);
 }
 
-const COMPACT_DAY_PICKER_CLASS_NAMES: Partial<ClassNames> = {
-  root: "relative w-full",
-  months: "flex justify-center",
-  month: "w-full",
-  month_caption: "mb-2 flex h-8 items-center justify-center text-sm font-extrabold text-[#26384D]",
-  caption_label: "text-sm font-extrabold text-[#26384D]",
-  nav: "absolute left-3 right-3 top-3 flex items-center justify-between",
-  button_previous:
-    "inline-flex h-8 w-8 items-center justify-center rounded-xl border border-[#E6D8C7] bg-white/76 text-[#8A552B] transition hover:border-[#D49A52] hover:bg-[#FFF8EF]",
-  button_next:
-    "inline-flex h-8 w-8 items-center justify-center rounded-xl border border-[#E6D8C7] bg-white/76 text-[#8A552B] transition hover:border-[#D49A52] hover:bg-[#FFF8EF]",
-  chevron: "h-4 w-4 fill-current",
-  month_grid: "w-full border-collapse",
-  weekdays: "grid grid-cols-7",
-  weekday: "py-1 text-center text-[0.68rem] font-bold text-[#9A8D80]",
-  week: "grid grid-cols-7 gap-1",
-  day: "aspect-square p-0 text-center",
-  day_button:
-    "h-8 w-8 rounded-xl text-sm font-bold text-[#26384D] transition hover:bg-[#FFF8EF] hover:text-[#8A552B] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#D49A52]/30",
-  today:
-    "[&>button]:border [&>button]:border-[#D49A52] [&>button]:bg-[#FFF8EF] [&>button]:text-[#8A552B]",
-  selected:
-    "[&>button]:bg-[linear-gradient(135deg,#8A552B,#14243A)] [&>button]:text-[#FFF8EF] [&>button]:shadow-[0_10px_22px_rgba(20,36,58,0.14)]",
-  outside: "opacity-35",
-};
-
-function formatDateAnswer(value: string, language: "en" | "zh") {
-  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
-
-  if (!match) {
-    return value;
-  }
-
-  const [, year, month, day] = match;
-
-  if (language === "zh") {
-    return `${year}年${month}月${day}日`;
-  }
-
-  const date = new Date(Number(year), Number(month) - 1, Number(day));
-  const monthLabel = new Intl.DateTimeFormat("en", { month: "short" }).format(
-    date,
-  );
-
-  return `${monthLabel} ${Number(day)}, ${year}`;
-}
-
-function padDatePart(value: number) {
-  return String(value).padStart(2, "0");
-}
-
-function formatDateValue(date: Date) {
-  return [
-    date.getFullYear(),
-    padDatePart(date.getMonth() + 1),
-    padDatePart(date.getDate()),
-  ].join("-");
-}
-
-function parseDateDraft(value: string) {
-  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
-
-  if (match) {
-    const [, year, month, day] = match;
-
-    return new Date(Number(year), Number(month) - 1, Number(day));
-  }
-
-  return undefined;
-}
-
-function DateTimeAnswerInput({
-  value,
-  questionTitle,
-  sourceQuestion,
-  onConfirm,
-}: {
-  value: string;
-  questionTitle: string;
-  sourceQuestion: string;
-  onConfirm: (value: string) => void;
-}) {
-  const language =
-    hasCjkText(questionTitle) || hasCjkText(sourceQuestion) ? "zh" : "en";
-  const placeholder = language === "zh" ? "选择日期" : "Select date";
-  const confirmLabel = language === "zh" ? "确定" : "Confirm";
-  const cancelLabel = language === "zh" ? "取消" : "Cancel";
-  const [isOpen, setIsOpen] = useState(false);
-  const [draftDate, setDraftDate] = useState<Date | undefined>(() =>
-    parseDateDraft(value),
-  );
-  const pickerRootRef = useRef<HTMLDivElement>(null);
-  const selectedValue = value;
-  const displayValue = selectedValue
-    ? formatDateAnswer(selectedValue, language)
-    : placeholder;
-
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
-    function handleDocumentPointerDown(event: PointerEvent) {
-      const target = event.target;
-
-      if (!(target instanceof Node)) {
-        return;
-      }
-
-      if (!pickerRootRef.current?.contains(target)) {
-        setIsOpen(false);
-        setDraftDate(parseDateDraft(value));
-      }
-    }
-
-    function handleDocumentKeyDown(event: globalThis.KeyboardEvent) {
-      if (event.key === "Escape") {
-        setIsOpen(false);
-        setDraftDate(parseDateDraft(value));
-      }
-    }
-
-    document.addEventListener("pointerdown", handleDocumentPointerDown);
-    document.addEventListener("keydown", handleDocumentKeyDown);
-
-    return () => {
-      document.removeEventListener("pointerdown", handleDocumentPointerDown);
-      document.removeEventListener("keydown", handleDocumentKeyDown);
-    };
-  }, [isOpen, value]);
-
-  function openPicker() {
-    setDraftDate(parseDateDraft(value));
-    setIsOpen(true);
-  }
-
-  function closePicker() {
-    setIsOpen(false);
-    setDraftDate(parseDateDraft(value));
-  }
-
-  function handleKeyDown(event: KeyboardEvent<HTMLDivElement>) {
-    if (event.key !== "Enter" && event.key !== " ") {
-      return;
-    }
-
-    event.preventDefault();
-    openPicker();
-  }
-
-  function handleConfirm(event: MouseEvent<HTMLButtonElement>) {
-    event.stopPropagation();
-
-    if (!draftDate) {
-      return;
-    }
-
-    setIsOpen(false);
-    onConfirm(formatDateValue(draftDate));
-  }
-
-  return (
-    <div ref={pickerRootRef} className="relative z-30">
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={openPicker}
-        onKeyDown={handleKeyDown}
-        className="group relative flex min-h-11 w-full cursor-pointer items-center gap-3 overflow-hidden rounded-2xl border border-[#E6D8C7] bg-white/82 px-3.5 text-left text-sm shadow-[0_8px_18px_rgba(20,36,58,0.06),0_1px_0_rgba(255,255,255,0.9)_inset] ring-1 ring-[#E6D8C7]/45 transition duration-200 hover:-translate-y-0.5 hover:border-[#D49A52] hover:bg-[#FFF8EF] hover:shadow-[0_16px_32px_rgba(20,36,58,0.12)] focus-visible:border-[#D49A52] focus-visible:ring-2 focus-visible:ring-[#D49A52]/25"
-      >
-        <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-xl border border-[#E6D8C7] bg-[#FFF8EF] text-[#8A552B] shadow-[0_6px_14px_rgba(20,36,58,0.06)] transition group-hover:border-[#D49A52]">
-          <CalendarClock className="h-3.5 w-3.5" />
-        </span>
-        <span
-          className={`min-w-0 flex-1 truncate font-semibold ${
-            selectedValue ? "text-[#172033]" : "text-[#8E9AB0]"
-          }`}
-        >
-          {displayValue}
-        </span>
-      </div>
-
-      {isOpen ? (
-        <div
-          role="dialog"
-          aria-modal="false"
-          className="relative z-50 mt-2 w-full rounded-2xl border border-[#E6D8C7] bg-[linear-gradient(145deg,#FFFFFF_0%,#FFFDF9_55%,#F7EFE5_100%)] p-3 text-[#172033] shadow-[0_18px_38px_rgba(10,18,30,0.16),0_1px_0_rgba(255,255,255,0.95)_inset] ring-1 ring-[#E6D8C7]/55 sm:absolute sm:top-[calc(100%+0.45rem)] sm:left-0 sm:mt-0 sm:w-[20rem] sm:shadow-[0_30px_70px_rgba(10,18,30,0.26),0_1px_0_rgba(255,255,255,0.95)_inset]"
-        >
-          <DayPicker
-            mode="single"
-            selected={draftDate}
-            onSelect={setDraftDate}
-            locale={language === "zh" ? zhCN : undefined}
-            classNames={COMPACT_DAY_PICKER_CLASS_NAMES}
-            showOutsideDays
-          />
-
-          <div className="mt-3 flex justify-end gap-2 border-t border-[#E6D8C7]/70 pt-3">
-            <button
-              type="button"
-              onClick={closePicker}
-              className="h-9 rounded-xl border border-[#E6D8C7] bg-white/78 px-3.5 text-sm font-bold text-[#74685C] transition hover:border-[#D49A52] hover:bg-[#FFF8EF] hover:text-[#172033]"
-            >
-              {cancelLabel}
-            </button>
-            <button
-              type="button"
-              onClick={handleConfirm}
-              disabled={!draftDate}
-              className="h-9 rounded-xl bg-[linear-gradient(135deg,#8A552B,#14243A)] px-3.5 text-sm font-bold text-[#FFF8EF] shadow-[0_10px_22px_rgba(20,36,58,0.12)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-45"
-            >
-              {confirmLabel}
-            </button>
-          </div>
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
 function ClarificationFlowPanel({
   flow,
   isGenerating,
+  isTransitioning,
   onAnswer,
   onAnswerAndAdvance,
   onOtherAnswer,
@@ -934,6 +709,7 @@ function ClarificationFlowPanel({
 }: {
   flow: ActiveClarificationFlow;
   isGenerating: boolean;
+  isTransitioning: boolean;
   onAnswer: (questionId: string, value: string | string[]) => void;
   onAnswerAndAdvance: (questionId: string, value: string) => void;
   onOtherAnswer: (questionId: string, value: string) => void;
@@ -945,7 +721,6 @@ function ClarificationFlowPanel({
   const questions = flow.flow.questions;
   const question = questions[flow.currentStepIndex];
   const isLastQuestion = flow.currentStepIndex >= questions.length - 1;
-  const isFirstStep = flow.currentStepIndex === 0;
   const answer = question ? flow.answers[question.id] : undefined;
   const otherAnswer = question ? flow.otherAnswers[question.id] ?? "" : "";
   const questionLanguage =
@@ -972,22 +747,12 @@ function ClarificationFlowPanel({
   function toggleMultiChoice(value: string) {
     const current = Array.isArray(answer) ? answer : [];
 
-    if (isFirstStep && !isLastQuestion) {
-      onAnswer(question.id, [value]);
-      onNext();
-      return;
-    }
-
     onAnswer(
       question.id,
       current.includes(value)
         ? current.filter((item) => item !== value)
         : [...current, value],
     );
-  }
-
-  function handleDateTimeConfirm(value: string) {
-    onAnswerAndAdvance(question.id, value);
   }
 
   function handleTextKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
@@ -1002,7 +767,7 @@ function ClarificationFlowPanel({
 
     event.preventDefault();
 
-    if (!hasAnswer || isGenerating) {
+    if (!hasAnswer || isGenerating || isTransitioning) {
       return;
     }
 
@@ -1035,19 +800,12 @@ function ClarificationFlowPanel({
               </p>
             ) : null}
 
-            {question.type === "date_time" ? (
-              <DateTimeAnswerInput
-                key={question.id}
-                value={typeof answer === "string" ? answer : ""}
-                questionTitle={question.title}
-                sourceQuestion={flow.sourceQuestion}
-                onConfirm={handleDateTimeConfirm}
-              />
-            ) : question.type === "text" ? (
+            {question.type === "text" ? (
               <textarea
                 value={typeof answer === "string" ? answer : ""}
                 onChange={(event) => onAnswer(question.id, event.target.value)}
                 onKeyDown={handleTextKeyDown}
+                disabled={isGenerating || isTransitioning}
                 className="min-h-24 w-full resize-none rounded-2xl border border-[#E6D8C7] bg-white/80 px-4 py-3 text-sm font-medium text-[#172033] outline-none shadow-[0_8px_18px_rgba(20,36,58,0.06)] transition focus:border-[#D49A52] focus:ring-2 focus:ring-[#D49A52]/25"
                 placeholder="Type your answer..."
               />
@@ -1070,12 +828,13 @@ function ClarificationFlowPanel({
                       <button
                         key={option.value}
                         type="button"
+                        disabled={isGenerating || isTransitioning}
                         onClick={() =>
                           isMultiChoice
                             ? toggleMultiChoice(option.value)
                             : onAnswerAndAdvance(question.id, option.value)
                         }
-                        className={`flex min-h-11 items-center gap-3 rounded-xl border px-3.5 py-2.5 text-left text-sm font-semibold shadow-[0_8px_18px_rgba(20,36,58,0.06)] transition duration-200 focus-visible:ring-2 focus-visible:ring-[#D49A52]/40 ${
+                        className={`flex min-h-11 items-center gap-3 rounded-xl border px-3.5 py-2.5 text-left text-sm font-semibold shadow-[0_8px_18px_rgba(20,36,58,0.06)] transition duration-200 focus-visible:ring-2 focus-visible:ring-[#D49A52]/40 disabled:cursor-not-allowed disabled:opacity-65 ${
                           selected
                             ? "border-[#D49A52] bg-white/76 text-[#172033] shadow-[0_10px_22px_rgba(20,36,58,0.08)] ring-1 ring-[#D49A52]/35 hover:-translate-y-0.5 hover:border-[#C78335] hover:shadow-[0_14px_28px_rgba(20,36,58,0.11)]"
                             : "border-[#E6D8C7] bg-white/76 text-[#26384D] hover:-translate-y-0.5 hover:border-[#D49A52] hover:bg-[#FFF8EF] hover:text-[#14243A] hover:shadow-[0_16px_32px_rgba(20,36,58,0.14)]"
@@ -1115,6 +874,7 @@ function ClarificationFlowPanel({
               <input
                 value={otherAnswer}
                 onChange={(event) => onOtherAnswer(question.id, event.target.value)}
+                disabled={isGenerating || isTransitioning}
                 className="h-11 w-full rounded-xl border border-[#E6D8C7] bg-white/80 px-4 text-sm font-medium text-[#172033] outline-none focus:border-[#D49A52] focus:ring-2 focus:ring-[#D49A52]/25"
                 placeholder={otherPlaceholder}
               />
@@ -1124,7 +884,7 @@ function ClarificationFlowPanel({
               <button
                 type="button"
                 onClick={onCancel}
-                disabled={isGenerating}
+                disabled={isGenerating || isTransitioning}
                 className="h-10 rounded-xl border border-[#E6D8C7] bg-white/60 px-4 text-sm font-bold text-[#74685C] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Cancel
@@ -1133,7 +893,9 @@ function ClarificationFlowPanel({
                 <button
                   type="button"
                   onClick={onBack}
-                  disabled={flow.currentStepIndex === 0 || isGenerating}
+                  disabled={
+                    flow.currentStepIndex === 0 || isGenerating || isTransitioning
+                  }
                   className="h-10 rounded-xl border border-[#E6D8C7] bg-white/60 px-4 text-sm font-bold text-[#74685C] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-45"
                 >
                   Back
@@ -1141,7 +903,7 @@ function ClarificationFlowPanel({
                 <button
                   type="button"
                   onClick={isLastQuestion ? onGenerate : onNext}
-                  disabled={!hasAnswer || isGenerating}
+                  disabled={!hasAnswer || isGenerating || isTransitioning}
                   className="h-10 rounded-xl bg-[linear-gradient(135deg,#8A552B,#14243A)] px-4 text-sm font-bold text-[#FFF8EF] shadow-[0_10px_22px_rgba(20,36,58,0.12)] transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-55"
                 >
                   {isLastQuestion ? "Generate itinerary" : "Next"}
@@ -1502,11 +1264,32 @@ function ConversationSkeleton() {
   );
 }
 
-export function ChatView({ chatId }: { chatId: string }) {
+export function ChatView({
+  chatId,
+  initialDetail,
+  initialHistory,
+  initialMe,
+}: {
+  chatId: string;
+  initialDetail: ChatDetailResponse | null;
+  initialHistory: ChatHistoryResponse;
+  initialMe: MeResponse;
+}) {
+  const initialChat = initialDetail
+      ? {
+        id: initialDetail.chat.id,
+        title: initialDetail.chat.title,
+        messages: initialDetail.messages.map(toChatMessage),
+        nextCursor: initialDetail.nextCursor,
+      }
+    : null;
   const router = useRouter();
   const scrollParentRef = useRef<HTMLDivElement>(null);
   const hasInitialScrolledRef = useRef(false);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const clarificationAdvanceTimeoutRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
   const generationTimeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const generationIntervalsRef = useRef<ReturnType<typeof setInterval>[]>([]);
   const streamTypewriterIntervalsRef = useRef<
@@ -1514,34 +1297,42 @@ export function ChatView({ chatId }: { chatId: string }) {
   >([]);
   const streamBuffersRef = useRef(new Map<string, StreamBuffer>());
   const lastAutoScrollAtRef = useRef(0);
-  const loadedChatDetailsRef = useRef(new Map<string, MockChat>());
+  const loadedChatDetailsRef = useRef(
+    new Map<string, MockChat>(initialChat ? [[initialChat.id, initialChat]] : []),
+  );
   const detailLoadingReasonRef = useRef<DetailLoadingReason>("initial");
   const lastCompletedDetailReasonRef = useRef<DetailLoadingReason>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [isLoadingChatDetail, setIsLoadingChatDetail] = useState(true);
+  const [isLoadingChatDetail, setIsLoadingChatDetail] = useState(!initialChat);
   const [detailLoadingReason, setDetailLoadingReason] =
     useState<DetailLoadingReason>("initial");
-  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [message, setMessage] = useState("");
   const [sharingMessageId, setSharingMessageId] = useState<string | null>(null);
   const [activeClarificationFlow, setActiveClarificationFlow] =
     useState<ActiveClarificationFlow | null>(null);
   const [isLoadingClarification, setIsLoadingClarification] = useState(false);
+  const [isClarificationTransitioning, setIsClarificationTransitioning] =
+    useState(false);
+  const [isLoadingPreviousMessages, setIsLoadingPreviousMessages] =
+    useState(false);
   const [previewState, setPreviewState] = useState<ImagePreviewState | null>(
     null,
   );
   const [chatError, setChatError] = useState<string | null>(null);
-  const [chatHistory, setChatHistory] = useState<ChatHistoryItem[]>([]);
+  const [chatHistory, setChatHistory] = useState<ChatHistoryItem[]>(
+    initialHistory.chats,
+  );
   const [activeChatId, setActiveChatId] = useState(chatId);
   const [toast, setToast] = useState<{
     message: string;
     x: number;
     y: number;
   } | null>(null);
-  const [chat, setChat] = useState<MockChat | null>(null);
-  const { user, isLoadingUser, refreshUser } = useCurrentUser();
+  const [chat, setChat] = useState<MockChat | null>(initialChat);
+  const { user, isLoadingUser, refreshUser } = useCurrentUser(initialMe);
   const currentTitle = chat?.title;
   const shouldShowHistorySkeleton =
     isLoadingChatDetail && detailLoadingReason === "history";
@@ -1660,6 +1451,15 @@ export function ChatView({ chatId }: { chatId: string }) {
     streamBuffersRef.current.clear();
   }
 
+  function clearClarificationAdvanceTimer() {
+    if (clarificationAdvanceTimeoutRef.current) {
+      clearTimeout(clarificationAdvanceTimeoutRef.current);
+      clarificationAdvanceTimeoutRef.current = null;
+    }
+
+    setIsClarificationTransitioning(false);
+  }
+
   function setChatAndCache(nextChat: MockChat) {
     loadedChatDetailsRef.current.set(nextChat.id, nextChat);
     setChat(nextChat);
@@ -1696,6 +1496,56 @@ export function ChatView({ chatId }: { chatId: string }) {
       loadedChatDetailsRef.current.set(targetChatId, nextChat);
       return nextChat;
     });
+  }
+
+  async function loadPreviousMessages() {
+    if (!chat?.nextCursor || isLoadingPreviousMessages || isGenerating) {
+      return;
+    }
+
+    const scrollElement = scrollParentRef.current;
+    const previousScrollHeight = scrollElement?.scrollHeight ?? 0;
+    const targetChatId = chat.id;
+    const cursor = chat.nextCursor;
+    setIsLoadingPreviousMessages(true);
+
+    try {
+      const response = await apiFetch<ChatDetailResponse>(
+        `/chats/${targetChatId}?before=${encodeURIComponent(cursor)}`,
+      );
+      const olderMessages = response.messages.map(toChatMessage);
+
+      updateChatByIdAndCache(targetChatId, (currentChat) => ({
+        ...currentChat,
+        messages: [...olderMessages, ...currentChat.messages],
+        nextCursor: response.nextCursor,
+      }));
+
+      requestAnimationFrame(() => {
+        const currentScrollElement = scrollParentRef.current;
+
+        if (currentScrollElement) {
+          currentScrollElement.scrollTop +=
+            currentScrollElement.scrollHeight - previousScrollHeight;
+        }
+      });
+    } catch {
+      // Existing messages stay usable; a later scroll can retry the request.
+    } finally {
+      setIsLoadingPreviousMessages(false);
+    }
+  }
+
+  function handleMessageScroll() {
+    const scrollElement = scrollParentRef.current;
+
+    if (
+      hasInitialScrolledRef.current &&
+      scrollElement &&
+      scrollElement.scrollTop < 120
+    ) {
+      void loadPreviousMessages();
+    }
   }
 
   function takeTypewriterChunk(text: string) {
@@ -2212,6 +2062,10 @@ export function ChatView({ chatId }: { chatId: string }) {
   }, [chat]);
 
   useEffect(() => {
+    if (initialHistory.chats.length > 0) {
+      return;
+    }
+
     let isActive = true;
 
     async function loadHistory() {
@@ -2243,7 +2097,7 @@ export function ChatView({ chatId }: { chatId: string }) {
     return () => {
       isActive = false;
     };
-  }, []);
+  }, [initialHistory.chats.length]);
 
   useEffect(() => {
     let isActive = true;
@@ -2251,6 +2105,7 @@ export function ChatView({ chatId }: { chatId: string }) {
 
     setChatError(null);
     clearGenerationTimers();
+    clearClarificationAdvanceTimer();
     setIsGenerating(false);
     setActiveClarificationFlow(null);
     setIsLoadingClarification(false);
@@ -2259,6 +2114,7 @@ export function ChatView({ chatId }: { chatId: string }) {
     if (cachedChat) {
       setChat(cachedChat);
       setIsLoadingChatDetail(false);
+      lastCompletedDetailReasonRef.current = detailLoadingReasonRef.current;
       updateDetailLoadingReason(null);
       return () => {
         isActive = false;
@@ -2288,6 +2144,7 @@ export function ChatView({ chatId }: { chatId: string }) {
           id: chatResponse.chat.id,
           title: chatResponse.chat.title,
           messages: chatResponse.messages.map(toChatMessage),
+          nextCursor: chatResponse.nextCursor,
         });
       } catch (error) {
         if (shouldHoldLoading) {
@@ -2368,6 +2225,7 @@ export function ChatView({ chatId }: { chatId: string }) {
       }
 
       clearGenerationTimers();
+      clearClarificationAdvanceTimer();
     };
   }, []);
 
@@ -2609,7 +2467,7 @@ export function ChatView({ chatId }: { chatId: string }) {
     questionId: string,
     value: string,
   ) {
-    if (!activeClarificationFlow) {
+    if (!activeClarificationFlow || isClarificationTransitioning) {
       return;
     }
 
@@ -2630,12 +2488,19 @@ export function ChatView({ chatId }: { chatId: string }) {
           ),
     };
 
-    if (isLastStep) {
-      startClarificationGeneration(nextFlow);
-      return;
-    }
-
     setActiveClarificationFlow(nextFlow);
+    setIsClarificationTransitioning(true);
+    clarificationAdvanceTimeoutRef.current = setTimeout(() => {
+      clarificationAdvanceTimeoutRef.current = null;
+      setIsClarificationTransitioning(false);
+
+      if (isLastStep) {
+        startClarificationGeneration(nextFlow);
+        return;
+      }
+
+      setActiveClarificationFlow(nextFlow);
+    }, CLARIFICATION_SINGLE_CHOICE_DELAY_MS);
   }
 
   function handleClarificationOtherAnswer(questionId: string, value: string) {
@@ -2653,6 +2518,7 @@ export function ChatView({ chatId }: { chatId: string }) {
   }
 
   function handleClarificationBack() {
+    clearClarificationAdvanceTimer();
     setActiveClarificationFlow((current) =>
       current
         ? {
@@ -2664,7 +2530,7 @@ export function ChatView({ chatId }: { chatId: string }) {
   }
 
   function handleClarificationNext() {
-    if (!activeClarificationFlow) {
+    if (!activeClarificationFlow || isClarificationTransitioning) {
       return;
     }
 
@@ -2687,6 +2553,7 @@ export function ChatView({ chatId }: { chatId: string }) {
   }
 
   function handleClarificationCancel() {
+    clearClarificationAdvanceTimer();
     const optimisticUserMessageId =
       activeClarificationFlow?.optimisticUserMessageId;
 
@@ -2706,6 +2573,8 @@ export function ChatView({ chatId }: { chatId: string }) {
     if (!chat || isGenerating) {
       return;
     }
+
+    clearClarificationAdvanceTimer();
 
     const submission = mergeClarifiedTripContext(flow);
     const loadingMessageId = `assistant-loading-${Date.now()}`;
@@ -2751,7 +2620,7 @@ export function ChatView({ chatId }: { chatId: string }) {
   }
 
   function handleClarificationGenerate() {
-    if (!activeClarificationFlow) {
+    if (!activeClarificationFlow || isClarificationTransitioning) {
       return;
     }
 
@@ -2910,12 +2779,7 @@ export function ChatView({ chatId }: { chatId: string }) {
 
         <section className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
           <div
-            className="absolute inset-0 bg-cover bg-center"
-            style={{
-              backgroundImage: 'url("/home-great-wall.png")',
-              backgroundPosition: "center center",
-              backgroundSize: "cover",
-            }}
+            className="chat-background absolute inset-0"
             aria-hidden="true"
           />
           <div
@@ -2959,6 +2823,7 @@ export function ChatView({ chatId }: { chatId: string }) {
 
           <div
             ref={scrollParentRef}
+            onScroll={handleMessageScroll}
             className="relative z-10 min-h-0 flex-1 overflow-y-auto px-4 pb-4 pt-12 sm:px-7 sm:pb-5 sm:pt-16"
           >
             {shouldShowConversationSkeleton ? (
@@ -2969,11 +2834,26 @@ export function ChatView({ chatId }: { chatId: string }) {
               </div>
             ) : (
               <>
-                <div
-                  className="relative mx-auto w-full max-w-[52rem]"
-                  style={{ height: rowVirtualizer.getTotalSize() }}
-                >
-                  {rowVirtualizer.getVirtualItems().map((virtualItem) => {
+                <div className="mx-auto w-full max-w-[52rem]">
+                  {chat?.nextCursor ? (
+                    <div className="flex justify-center pb-5">
+                      <button
+                        type="button"
+                        onClick={() => void loadPreviousMessages()}
+                        disabled={isLoadingPreviousMessages || isGenerating}
+                        className="rounded-full border border-white/70 bg-white/88 px-3 py-1.5 text-xs font-semibold text-[#6F6258] shadow-sm transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isLoadingPreviousMessages
+                          ? "Loading earlier messages..."
+                          : "Load earlier messages"}
+                      </button>
+                    </div>
+                  ) : null}
+                  <div
+                    className="relative w-full"
+                    style={{ height: rowVirtualizer.getTotalSize() }}
+                  >
+                    {rowVirtualizer.getVirtualItems().map((virtualItem) => {
                     const chatMessage = chat?.messages[virtualItem.index];
 
                     if (!chatMessage) {
@@ -3002,7 +2882,8 @@ export function ChatView({ chatId }: { chatId: string }) {
                         />
                       </div>
                     );
-                  })}
+                    })}
+                  </div>
                 </div>
                 {isLoadingClarification ? (
                   <div className="mx-auto w-full max-w-[52rem] pb-8">
@@ -3022,6 +2903,7 @@ export function ChatView({ chatId }: { chatId: string }) {
                   <ClarificationFlowPanel
                     flow={activeClarificationFlow}
                     isGenerating={isGenerating}
+                    isTransitioning={isClarificationTransitioning}
                     onAnswer={handleClarificationAnswer}
                     onAnswerAndAdvance={handleClarificationAnswerAndAdvance}
                     onOtherAnswer={handleClarificationOtherAnswer}

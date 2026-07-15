@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { apiError } from "@/lib/api/server";
 import {
   CreateSharedAnswerRequest,
@@ -33,16 +34,47 @@ function createShareUrl(request: Request, shareSlug: string) {
   return `${new URL(request.url).origin}/share/${shareSlug}`;
 }
 
-async function createUniqueShareSlug() {
+async function createShareWithUniqueSlug({
+  chatId,
+  userMessageId,
+  assistantMessageId,
+  profileId,
+  anonymousSessionId,
+  question,
+  answer,
+}: {
+  chatId: string;
+  userMessageId: string;
+  assistantMessageId: string;
+  profileId: string | null;
+  anonymousSessionId: string | null;
+  question: string;
+  answer: string;
+}) {
   for (let attempt = 0; attempt < 5; attempt += 1) {
-    const shareSlug = createShareSlug();
-    const existing = await prisma.sharedAnswer.findUnique({
-      where: { shareSlug },
-      select: { id: true },
-    });
+    try {
+      return await prisma.sharedAnswer.create({
+        data: {
+          chatId,
+          userMessageId,
+          assistantMessageId,
+          profileId,
+          anonymousSessionId,
+          shareSlug: createShareSlug(),
+          question,
+          answer,
+          isPublic: true,
+        },
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002"
+      ) {
+        continue;
+      }
 
-    if (!existing) {
-      return shareSlug;
+      throw error;
     }
   }
 
@@ -152,18 +184,14 @@ export async function POST(request: Request) {
 
     const share =
       existingShare ??
-      (await prisma.sharedAnswer.create({
-        data: {
-          chatId: chat.id,
-          userMessageId: userMessage.id,
-          assistantMessageId: assistantMessage.id,
-          profileId: chat.profileId,
-          anonymousSessionId: chat.anonymousSessionId,
-          shareSlug: await createUniqueShareSlug(),
-          question: userMessage.content,
-          answer: assistantMessage.content,
-          isPublic: true,
-        },
+      (await createShareWithUniqueSlug({
+        chatId: chat.id,
+        userMessageId: userMessage.id,
+        assistantMessageId: assistantMessage.id,
+        profileId: chat.profileId,
+        anonymousSessionId: chat.anonymousSessionId,
+        question: userMessage.content,
+        answer: assistantMessage.content,
       }));
 
     const response: CreateSharedAnswerResponse = {

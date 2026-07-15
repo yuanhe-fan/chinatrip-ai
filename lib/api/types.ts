@@ -88,6 +88,8 @@ export type ChatDetailResponse = {
     lastMessageAt: string;
   };
   messages: ChatDetailMessage[];
+  /** Cursor for loading older messages; null when the oldest message is present. */
+  nextCursor: string | null;
 };
 
 export type ChatHistoryItem = {

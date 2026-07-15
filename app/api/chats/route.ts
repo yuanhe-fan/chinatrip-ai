@@ -1,13 +1,11 @@
 import { NextResponse } from "next/server";
 import { apiError, isDatabaseUnavailableError } from "@/lib/api/server";
 import {
-  ChatHistoryResponse,
   CreateChatRequest,
   CreateChatResponse,
 } from "@/lib/api/types";
 import {
   createChatOwnerData,
-  getChatHistoryOwner,
   getCurrentIdentity,
 } from "@/lib/auth/current-identity";
 import { findQuickQuestionByExactQuestion } from "@/lib/quick-questions/questions";
@@ -18,12 +16,10 @@ import {
 } from "@/lib/quick-questions/menus";
 import { prisma } from "@/lib/prisma";
 import {
-  CHAT_HISTORY_CACHE_TTL_SECONDS,
-  createChatHistoryCacheKey,
   invalidateChatHistoryCacheForRecord,
-  safeGetJson,
-  safeSetJson,
 } from "@/lib/cache/redis";
+import { readChatHistory } from "@/lib/chat/read";
+import { createServerTiming, logPerformance } from "@/lib/performance/server-timing";
 
 export const runtime = "nodejs";
 export const preferredRegion = "sin1";
@@ -40,176 +36,38 @@ function createChatTitle(message: string) {
   return message.trim().replace(/\s+/g, " ");
 }
 
-function getLimit(value: string | null) {
-  const parsed = Number(value);
-
-  if (!Number.isFinite(parsed) || parsed <= 0) {
-    return 30;
-  }
-
-  return Math.min(Math.floor(parsed), 50);
-}
-
-function createPreview(value: string | undefined) {
-  if (!value) {
-    return null;
-  }
-
-  const normalized = value.replace(/\s+/g, " ").trim();
-
-  if (!normalized) {
-    return null;
-  }
-
-  return normalized.length > 80 ? `${normalized.slice(0, 80)}...` : normalized;
-}
-
-function logChatHistoryTiming({
-  ownerMs,
-  cacheMs,
-  dbMs,
-  totalMs,
-  cacheHit,
-  ownerType,
-  limit,
-}: {
-  ownerMs: number;
-  cacheMs: number;
-  dbMs: number;
-  totalMs: number;
-  cacheHit: boolean;
-  ownerType: "profile" | "anonymous" | "none";
-  limit: number;
-}) {
-  console.info("chat_history_timing", {
-    ownerMs,
-    cacheMs,
-    dbMs,
-    totalMs,
-    cacheHit,
-    ownerType,
-    limit,
-  });
-}
-
 export async function GET(request: Request) {
   const startedAt = Date.now();
   const { searchParams } = new URL(request.url);
-  const limit = getLimit(searchParams.get("limit"));
-  let ownerMs = 0;
-  let cacheMs = 0;
-  let dbMs = 0;
-  let cacheHit = false;
-  let ownerType: "profile" | "anonymous" | "none" = "none";
 
   try {
-    const ownerStartedAt = Date.now();
-    const owner = await getChatHistoryOwner();
-    ownerMs = Date.now() - ownerStartedAt;
-    ownerType = owner?.type ?? "none";
-
-    if (!owner) {
-      const response: ChatHistoryResponse = {
-        chats: [],
-        nextCursor: null,
-      };
-
-      logChatHistoryTiming({
-        ownerMs,
-        cacheMs,
-        dbMs,
-        totalMs: Date.now() - startedAt,
-        cacheHit,
-        ownerType,
-        limit,
-      });
-
-      return NextResponse.json(response);
-    }
-
-    const cacheKey = createChatHistoryCacheKey(owner, limit);
-    const cacheStartedAt = Date.now();
-    const cachedResponse = await safeGetJson<ChatHistoryResponse>(cacheKey);
-    cacheMs = Date.now() - cacheStartedAt;
-
-    if (cachedResponse) {
-      cacheHit = true;
-      logChatHistoryTiming({
-        ownerMs,
-        cacheMs,
-        dbMs,
-        totalMs: Date.now() - startedAt,
-        cacheHit,
-        ownerType,
-        limit,
-      });
-
-      return NextResponse.json(cachedResponse);
-    }
-
-    const dbStartedAt = Date.now();
-    const chats = await prisma.chat.findMany({
-      where: {
-        status: {
-          not: "deleted",
-        },
-        ...(owner.type === "profile"
-          ? { profileId: owner.profileId }
-          : { anonymousSessionId: owner.anonymousSessionId }),
-      },
-      select: {
-        id: true,
-        title: true,
-        language: true,
-        status: true,
-        updatedAt: true,
-        lastMessageAt: true,
-        messages: {
-          where: {
-            role: {
-              in: ["user", "assistant"],
-            },
-          },
-          select: {
-            content: true,
-          },
-          orderBy: [{ sequence: "desc" }, { createdAt: "desc" }],
-          take: 1,
-        },
-      },
-      orderBy: {
-        lastMessageAt: "desc",
-      },
-      take: limit,
+    const authStartedAt = Date.now();
+    const identity = await getCurrentIdentity();
+    const authMs = Date.now() - authStartedAt;
+    const result = await readChatHistory(identity, {
+      limit: searchParams.get("limit"),
+      cursor: searchParams.get("cursor"),
     });
-    dbMs = Date.now() - dbStartedAt;
-
-    const response: ChatHistoryResponse = {
-      chats: chats.map((chat) => ({
-        id: chat.id,
-        title: chat.title,
-        language: chat.language,
-        status: chat.status === "archived" ? "archived" : "active",
-        updatedAt: chat.updatedAt.toISOString(),
-        lastMessageAt: chat.lastMessageAt.toISOString(),
-        preview: createPreview(chat.messages[0]?.content),
-      })),
-      nextCursor: null,
-    };
-
-    await safeSetJson(cacheKey, response, CHAT_HISTORY_CACHE_TTL_SECONDS);
-
-    logChatHistoryTiming({
-      ownerMs,
-      cacheMs,
-      dbMs,
-      totalMs: Date.now() - startedAt,
-      cacheHit,
-      ownerType,
-      limit,
+    const totalMs = Date.now() - startedAt;
+    logPerformance("chat_history", {
+      authMs,
+      cacheMs: result.cacheMs,
+      dbMs: result.dbMs,
+      cacheHit: result.cacheHit ? 1 : 0,
+      totalMs,
     });
 
-    return NextResponse.json(response);
+    return NextResponse.json(result.response, {
+      headers: {
+        "Server-Timing": createServerTiming({
+          auth: authMs,
+          cache: result.cacheMs,
+          db: result.dbMs,
+          total: totalMs,
+        }),
+        "Cache-Control": "private, no-store",
+      },
+    });
   } catch (error) {
     console.error("Failed to get chat history", error);
 

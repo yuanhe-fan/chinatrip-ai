@@ -15,12 +15,12 @@
     "lint": "eslint",
     "knowledge:ingest:dry-run": "node scripts/ingest-knowledge.mjs --dry-run",
     "knowledge:ingest": "node scripts/ingest-knowledge.mjs",
+    "assets:optimize": "node scripts/optimize-images.mjs",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio"
   },
   "dependencies": {
-    "@daypicker/react": "^10.0.1",
     "@prisma/client": "^6.13.0",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.49.1",
@@ -45,6 +45,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
     "prisma": "^6.13.0",
+    "sharp": "^0.34.5",
     "tailwindcss": "^4",
     "tsx": "^4.22.4",
     "typescript": "^5"

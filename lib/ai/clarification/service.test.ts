@@ -34,7 +34,7 @@ test("clarification schema accepts a valid flow", () => {
   assert.equal(result.success, true);
 });
 
-test("clarification schema accepts date_time questions", () => {
+test("clarification schema rejects date_time questions", () => {
   const result = clarificationFlowSchema.safeParse({
     intent: "itinerary_planning",
     needsClarification: true,
@@ -53,7 +53,7 @@ test("clarification schema accepts date_time questions", () => {
     ],
   });
 
-  assert.equal(result.success, true);
+  assert.equal(result.success, false);
 });
 
 test("clarification schema rejects unsupported choice questions without options", () => {
@@ -75,13 +75,13 @@ test("clarification schema rejects unsupported choice questions without options"
   assert.equal(result.success, false);
 });
 
-test("clarification schema rejects more than six questions", () => {
+test("clarification schema rejects more than five questions", () => {
   const result = clarificationFlowSchema.safeParse({
     intent: "itinerary_planning",
     needsClarification: true,
     reason: "Too many questions.",
     extractedContext: {},
-    questions: Array.from({ length: 7 }, (_, index) => ({
+    questions: Array.from({ length: 6 }, (_, index) => ({
       id: `q_${index}`,
       title: `Question ${index}`,
       type: "text",
@@ -235,7 +235,7 @@ test("filters AI questions that ask for known start area and dietary needs", () 
   );
 });
 
-test("filters timing questions before a concrete destination is known", () => {
+test("filters timing questions regardless of destination context", () => {
   const flow = normalizeClarificationFlow(
     {
       intent: "itinerary_planning",
@@ -247,7 +247,7 @@ test("filters timing questions before a concrete destination is known", () => {
           id: "arrival_time",
           title: "When will you arrive?",
           description: "Choose the date you expect to start.",
-          type: "date_time",
+          type: "text",
           required: true,
         },
       ],
@@ -263,7 +263,36 @@ test("filters timing questions before a concrete destination is known", () => {
   assert.equal(flow.questions[0]?.type, "single_choice");
   assert.deepEqual(
     flow.questions.map((question) => question.id),
-    ["destination", "interests", "travelers", "pace"],
+    ["destination", "travelers", "pace", "interests"],
+  );
+});
+
+test("filters timing questions even when city and days are already known", () => {
+  const flow = normalizeClarificationFlow(
+    {
+      intent: "itinerary_planning",
+      needsClarification: true,
+      reason: "Need timing.",
+      extractedContext: {},
+      questions: [
+        {
+          id: "departure_time",
+          title: "What date will you leave?",
+          type: "text",
+          required: true,
+        },
+      ],
+    },
+    { destination: "Beijing", days: 3 },
+  );
+
+  assert.equal(
+    flow.questions.some((question) => /time|date|leave/i.test(question.id)),
+    false,
+  );
+  assert.deepEqual(
+    flow.questions.map((question) => question.id),
+    ["travelers", "pace", "interests"],
   );
 });
 
@@ -295,17 +324,17 @@ test("supplements broad country-scope flows with high-value baseline questions",
 
   assert.deepEqual(
     flow.questions.map((question) => question.id),
-    ["destination", "interests", "travelers", "pace"],
+    ["destination", "travelers", "pace", "interests"],
   );
 });
 
-test("fallback asks city, interests, travelers, and pace before timing when days are known", () => {
+test("fallback asks city, travelers, pace, and interests when days are known", () => {
   const flow = createFallbackClarificationFlow({ days: 3 });
 
   assert.equal(flow.needsClarification, true);
   assert.deepEqual(
     flow.questions.map((question) => question.id),
-    ["destination", "interests", "travelers", "pace"],
+    ["destination", "travelers", "pace", "interests"],
   );
   assert.equal(flow.questions[0]?.id, "destination");
   assert.equal(flow.questions[0]?.type, "single_choice");
@@ -327,7 +356,7 @@ test("fallback asks city choices for broad China scope with known days", () => {
   assert.equal(flow.questions[0]?.type, "single_choice");
   assert.deepEqual(
     flow.questions.map((question) => question.id),
-    ["destination", "interests", "travelers", "pace"],
+    ["destination", "travelers", "pace", "interests"],
   );
   assert.notEqual(flow.questions[0]?.id, "arrival_time");
 });
@@ -341,7 +370,7 @@ test("broad China fallback asks more than a single city question", () => {
   assert.equal(flow.needsClarification, true);
   assert.deepEqual(
     flow.questions.map((question) => question.id),
-    ["destination", "interests", "travelers", "pace"],
+    ["destination", "travelers", "pace", "interests"],
   );
   assert.equal(flow.questions.length >= 4, true);
 });
@@ -435,6 +464,8 @@ test("keeps information-rich requests eligible to skip clarification", () => {
   assert.equal(flow.extractedContext.days, 5);
   assert.equal(flow.extractedContext.travelers, "Two travelers");
   assert.equal(flow.extractedContext.startArea, "王府井");
+  assert.equal(flow.extractedContext.arrivalTime, "2pm");
+  assert.equal(flow.extractedContext.departureTime, "10am");
   assert.deepEqual(flow.extractedContext.interests, ["history", "food"]);
   assert.deepEqual(flow.extractedContext.dietaryNeeds, ["no spicy"]);
 });
@@ -446,7 +477,7 @@ test("fallback asks only for missing days when destination is known", () => {
   assert.equal(flow.questions[0]?.id, "days");
 });
 
-test("fallback asks date_time questions when destination and days are known", () => {
+test("fallback asks preference questions instead of time questions", () => {
   const flow = createFallbackClarificationFlow({
     destination: "Chengdu",
     days: 1,
@@ -454,17 +485,18 @@ test("fallback asks date_time questions when destination and days are known", ()
 
   assert.equal(flow.needsClarification, true);
   assert.deepEqual(
-    flow.questions.map((question) => [question.id, question.type]),
-    [
-      ["arrival_time", "date_time"],
-      ["departure_time", "date_time"],
-    ],
+    flow.questions.map((question) => question.id),
+    ["travelers", "pace", "interests"],
   );
 });
 
-test("fallback asks for destination and days only when both are missing", () => {
+test("fallback asks the five highest-priority missing fields", () => {
   const flow = createFallbackClarificationFlow();
 
   assert.equal(flow.needsClarification, true);
-  assert.equal(flow.questions[0]?.id, "destination_and_days");
+  assert.deepEqual(
+    flow.questions.map((question) => question.id),
+    ["destination", "days", "travelers", "pace", "interests"],
+  );
+  assert.equal(flow.questions.length, 5);
 });

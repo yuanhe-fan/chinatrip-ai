@@ -80,8 +80,7 @@ type ClarificationAnswerMetadata = {
 type ClarificationQuestionType =
   | "single_choice"
   | "multi_choice"
-  | "text"
-  | "date_time";
+  | "text";
 
 type ClarificationOption = {
   label: string;
@@ -125,11 +124,12 @@ type ClarificationFlow = {
 
 限制：
 
-- `questions` 最多 6 个。
+- `questions` 最多 5 个；根据用户原始问题动态生成 0 至 5 个，不为凑数追问。
 - `single_choice` 和 `multi_choice` 必须有 2 至 8 个选项，除非 `allowOther` 为 true。
-- `text` 和 `date_time` 不需要 options。
+- `text` 不需要 options。
 - 无法通过 schema 校验时使用兜底问题。
-- `China` / `中国` 只表示国家范围，不写入具体 `destination`；当只有国家范围和天数时，兜底问题必须优先补齐城市或城市组合、兴趣主题、同行人和节奏，不应只问城市，也不应先问抵达/离开时间。
+- `China` / `中国` 只表示国家范围，不写入具体 `destination`；当只有国家范围和天数时，兜底问题必须优先补齐城市或城市组合、同行人、节奏和兴趣主题。
+- 原始问题中已出现的抵达或离开时间保留在 `ClarifiedTripContext` 供最终生成参考；澄清流绝不询问日期、抵达或离开时间。
 
 ## 5. Clarification API
 
@@ -264,7 +264,6 @@ type ActiveClarificationFlow = {
 - `single_choice`：单选按钮组。
 - `multi_choice`：多选按钮组。
 - `text`：短文本输入。
-- `date_time`：主题化输入区打开 DayPicker 日期选择弹层，弹层内部完成确认/取消，提交值为 `YYYY-MM-DD`。
 - `allowOther`：展开自定义输入。
 - `Back`：返回上一题。
 - `Next`：进入下一题。
@@ -276,11 +275,9 @@ UI 要求：
 - 一次只展示一个问题。
 - 移动端不横向溢出。
 - 必填题未完成时禁用 `Next` 或最后一步的 `Generate itinerary`。
-- `date_time` 空态 placeholder 跟随问题语言：中文显示“选择日期”，英文显示“Select date”。
-- `date_time` 点击整个输入区域打开 DayPicker 日期选择弹层，不依赖浏览器原生 picker。
-- `date_time` 弹层内部提供 `Cancel` / `Confirm` 或 `取消` / `确定`；取消只关闭弹层不提交，确认后写入 `YYYY-MM-DD`，非最后一题进入下一题，最后一题直接生成。
-- 第一题完成有效回答后自动进入第二题：`single_choice`、第一题 `multi_choice`、`date_time` 点击确认后推进；`text` 通过 Enter 或 Next 推进。
-- 非第一题 `multi_choice` 仍保留 Next，避免多选时误跳。
+- `single_choice` 点击后立即显示选中态并锁定当前卡片，350ms 后自动进入下一题；最后一题同样在 350ms 后直接生成。
+- `multi_choice`、`text` 和 `Other` 输入保持用户手动点击 Next，避免误跳。
+- 返回、取消、切换聊天或组件卸载时必须清理单选跳转定时器。
 - 最后一题完成后不进入摘要页，直接调用正式生成链路。
 - 澄清流存在时不阻塞普通聊天历史渲染。
 
@@ -303,7 +300,7 @@ UI 要求：
 单元测试：
 
 - schema 接受合法 flow。
-- schema 拒绝非法题型、空选项、超出 6 个问题。
+- schema 拒绝 `date_time`、空选项和超出 5 个问题；过滤器会移除任何日期或时间相关题目。
 - service 能从 markdown code fence 中提取 JSON。
 - service 在非法输出时返回兜底问题。
 - service 能抽取城市、天数、同行、节奏、住宿区域、兴趣、饮食限制和少步行需求等已知上下文。
@@ -313,11 +310,11 @@ UI 要求：
 UI 验收：
 
 - `帮我制定北京五日游` 触发澄清流。
-- `Can you help me plan a simple five-day China itinerary?` 不把 China 当具体城市，并且不只询问日期。
+- `Can you help me plan a simple five-day China itinerary?` 不把 China 当具体城市，并补齐城市、同行人、节奏和兴趣等高价值信息。
 - 用户可以选择、返回修改、取消，并在最后一步直接生成。
 - 完成全部问题后直接生成，不展示 `Trip setup` 摘要页。
 - 信息足够的问题可以跳过澄清直接生成。
-- 移动端问题卡片不溢出，日期选择内联展开后页面可以自然滚动到 `Confirm` / `Cancel`。
+- 移动端问题卡片不溢出；单选过渡期间不允许重复提交或跳题。
 
 Harness：
 

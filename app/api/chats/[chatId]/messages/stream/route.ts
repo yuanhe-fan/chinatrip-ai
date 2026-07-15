@@ -8,6 +8,7 @@ import { createGenerationMetadata } from "@/lib/messages/metadata";
 import { mergeCompletionStatusMetadata } from "@/lib/ai/completion-status";
 import { prisma } from "@/lib/prisma";
 import { invalidateChatHistoryCacheForRecord } from "@/lib/cache/redis";
+import { createServerTiming, logPerformance } from "@/lib/performance/server-timing";
 import {
   getFastPathAnswer,
   isRecord,
@@ -274,6 +275,12 @@ export async function POST(request: Request, context: RouteContext) {
             },
           });
           await invalidateChatHistoryCacheForRecord(prepared.chat);
+          logPerformance("chat_stream", {
+            prepareMs: preparedAt - requestStartedAt,
+            firstDeltaMs: firstDeltaAt - requestStartedAt,
+            totalMs: totalLatencyMs,
+            fastPath: 1,
+          });
 
           writeEvent(controller, {
             type: "done",
@@ -377,6 +384,13 @@ export async function POST(request: Request, context: RouteContext) {
           }),
         ]);
         await invalidateChatHistoryCacheForRecord(prepared.chat);
+        logPerformance("chat_stream", {
+          prepareMs: preparedAt - requestStartedAt,
+          firstDeltaMs,
+          aiMs: finalResult.result.latencyMs,
+          totalMs: totalLatencyMs,
+          fastPath: 0,
+        });
 
         const usage: SendMessageResponse["usage"] = {
           provider: finalResult.result.provider,
@@ -437,6 +451,10 @@ export async function POST(request: Request, context: RouteContext) {
           }),
         ]);
         await invalidateChatHistoryCacheForRecord(prepared.chat);
+        logPerformance("chat_stream_error", {
+          prepareMs: preparedAt - requestStartedAt,
+          totalMs: Date.now() - requestStartedAt,
+        });
 
         writeEvent(controller, {
           type: "error",
@@ -458,6 +476,9 @@ export async function POST(request: Request, context: RouteContext) {
       "Cache-Control": "no-cache, no-transform",
       Connection: "keep-alive",
       "Content-Type": "text/event-stream; charset=utf-8",
+      "Server-Timing": createServerTiming({
+        prepare: preparedAt - requestStartedAt,
+      }),
     },
   });
 }

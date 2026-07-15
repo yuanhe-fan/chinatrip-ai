@@ -124,20 +124,13 @@ function inferBaselineField(question: ClarificationQuestion) {
   return baselineFields.find((field) => asksField(question, field));
 }
 
-function asksTimingBeforeDestination(
-  question: ClarificationQuestion,
-  context: ClarifiedTripContext,
-) {
-  if (hasKnownValue(context, "destination")) {
-    return false;
-  }
-
+function asksTiming(question: ClarificationQuestion) {
   const text = questionAsText(question);
 
-  return QUESTION_FIELD_PATTERNS.some(
-    ({ field, pattern }) =>
-      (field === "arrivalTime" || field === "departureTime") &&
-      pattern.test(text),
+  return (
+    /\b(arrival|arrive|departure|depart|leave|leaving|travel date|date|time)\b|抵达|到达|离开|返程|日期|时间/.test(
+      text,
+    )
   );
 }
 
@@ -165,7 +158,7 @@ function withBroadScopeBaselineQuestions(
       merged.push(fallbackQuestion);
     }
 
-    if (merged.length >= 6) {
+    if (merged.length >= 5) {
       break;
     }
   }
@@ -195,7 +188,7 @@ export function normalizeClarificationFlow(
     flow.questions.filter(
       (question) =>
         !asksKnownField(question, extractedContext) &&
-        !asksTimingBeforeDestination(question, extractedContext),
+        !asksTiming(question),
     ),
     extractedContext,
   );
@@ -212,7 +205,7 @@ export function normalizeClarificationFlow(
     return {
       ...flow,
       extractedContext,
-      questions,
+      questions: questions.slice(0, 5),
     };
   }
 

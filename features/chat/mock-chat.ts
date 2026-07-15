@@ -48,6 +48,7 @@ export type MockChat = {
   id: string;
   title: string;
   messages: ChatMessage[];
+  nextCursor?: string | null;
 };
 
 export const DEFAULT_QUESTION =

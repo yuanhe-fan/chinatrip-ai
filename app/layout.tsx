@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { DisablePageZoom } from "@/components/DisablePageZoom";
+import { WebVitalsReporter } from "@/components/WebVitalsReporter";
 import "./globals.css";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://chinatrip.ai";
@@ -14,11 +15,6 @@ export const metadata: Metadata = {
     template: `%s | ${siteName}`,
   },
   description: siteDescription,
-  icons: {
-    icon: "/logo-img.png",
-    shortcut: "/logo-img.png",
-    apple: "/logo-img.png",
-  },
   alternates: {
     canonical: "/",
   },
@@ -30,7 +26,7 @@ export const metadata: Metadata = {
     type: "website",
     images: [
       {
-        url: "/home-great-wall.png",
+        url: "/home-social.jpg",
         width: 1200,
         height: 630,
         alt: "ChinaTrip AI travel guide for China",
@@ -41,7 +37,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "ChinaTrip AI - AI Travel Guide for China",
     description: siteDescription,
-    images: ["/home-great-wall.png"],
+    images: ["/home-social.jpg"],
   },
   robots: {
     index: true,
@@ -68,6 +64,7 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <DisablePageZoom />
+        <WebVitalsReporter />
         {children}
       </body>
     </html>

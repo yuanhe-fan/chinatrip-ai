@@ -4,10 +4,6 @@ import { prisma } from "@/lib/prisma";
 
 type PublicShare = SharedAnswerResponse["share"];
 
-type PublicShareOptions = {
-  incrementViewCount?: boolean;
-};
-
 export function isPublicShareId(value: string) {
   return /^[a-zA-Z0-9_-]{6,40}$/.test(value);
 }
@@ -34,10 +30,7 @@ function toPublicShare(share: {
   };
 }
 
-export async function getPublicShareBySlug(
-  shareId: string,
-  options: PublicShareOptions = {},
-): Promise<PublicShare | null> {
+export async function getPublicShareBySlug(shareId: string): Promise<PublicShare | null> {
   if (!isPublicShareId(shareId)) {
     return null;
   }
@@ -61,27 +54,24 @@ export async function getPublicShareBySlug(
     return null;
   }
 
-  if (!options.incrementViewCount) {
-    return toPublicShare(share);
+  return toPublicShare(share);
+}
+
+export async function incrementPublicShareView(shareId: string) {
+  if (!isPublicShareId(shareId)) {
+    return;
   }
 
-  const updatedShare = await prisma.sharedAnswer.update({
+  await prisma.sharedAnswer.updateMany({
     where: {
-      id: share.id,
+      shareSlug: shareId,
+      isPublic: true,
+      revokedAt: null,
     },
     data: {
       viewCount: {
         increment: 1,
       },
     },
-    include: {
-      assistantMessage: {
-        select: {
-          metadata: true,
-        },
-      },
-    },
   });
-
-  return toPublicShare(updatedShare);
 }

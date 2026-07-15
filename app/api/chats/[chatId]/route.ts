@@ -1,18 +1,9 @@
 import { NextResponse } from "next/server";
 import { apiError, isDatabaseUnavailableError } from "@/lib/api/server";
-import { ChatDetailResponse } from "@/lib/api/types";
-import {
-  createChatOwnerWhere,
-  getCurrentIdentity,
-} from "@/lib/auth/current-identity";
-import {
-  readAnswerCompletionStatus,
-  readAnswerSources,
-  readAnswerVisuals,
-  readQuickQuestionMenu,
-} from "@/lib/messages/metadata";
+import { getCurrentIdentity } from "@/lib/auth/current-identity";
 import { isUuid } from "@/lib/chat/message-generation";
-import { prisma } from "@/lib/prisma";
+import { readChatDetail } from "@/lib/chat/read";
+import { createServerTiming, logPerformance } from "@/lib/performance/server-timing";
 
 export const runtime = "nodejs";
 export const preferredRegion = "sin1";
@@ -23,7 +14,8 @@ type RouteContext = {
   }>;
 };
 
-export async function GET(_request: Request, context: RouteContext) {
+export async function GET(request: Request, context: RouteContext) {
+  const startedAt = Date.now();
   const { chatId } = await context.params;
 
   if (!isUuid(chatId)) {
@@ -31,82 +23,29 @@ export async function GET(_request: Request, context: RouteContext) {
   }
 
   try {
+    const authStartedAt = Date.now();
     const identity = await getCurrentIdentity();
-    const chat = await prisma.chat.findFirst({
-      where: {
-        id: chatId,
-        status: {
-          not: "deleted",
-        },
-        ...createChatOwnerWhere(identity),
-      },
-      include: {
-        messages: {
-          where: {
-            role: {
-              in: ["user", "assistant"],
-            },
-          },
-          orderBy: [{ sequence: "asc" }, { createdAt: "asc" }],
-        },
-      },
+    const authMs = Date.now() - authStartedAt;
+    const dbStartedAt = Date.now();
+    const { searchParams } = new URL(request.url);
+    const response = await readChatDetail(chatId, identity, {
+      limit: searchParams.get("limit"),
+      before: searchParams.get("before"),
     });
+    const dbMs = Date.now() - dbStartedAt;
 
-    if (!chat || chat.status === "deleted") {
+    if (!response) {
       return apiError("CHAT_NOT_FOUND", "Chat not found.", 404);
     }
+    const totalMs = Date.now() - startedAt;
+    logPerformance("chat_detail", { authMs, dbMs, totalMs });
 
-    const response: ChatDetailResponse = {
-      chat: {
-        id: chat.id,
-        title: chat.title,
-        language: chat.language,
-        status: chat.status === "archived" ? "archived" : "active",
-        createdAt: chat.createdAt.toISOString(),
-        updatedAt: chat.updatedAt.toISOString(),
-        lastMessageAt: chat.lastMessageAt.toISOString(),
+    return NextResponse.json(response, {
+      headers: {
+        "Server-Timing": createServerTiming({ auth: authMs, db: dbMs, total: totalMs }),
+        "Cache-Control": "private, no-store",
       },
-      messages: chat.messages.map((message) => {
-        if (message.role !== "user" && message.role !== "assistant") {
-          throw new Error(`Unexpected chat message role: ${message.role}`);
-        }
-
-        const completionStatus =
-          message.role === "assistant"
-            ? readAnswerCompletionStatus(message.metadata)
-            : null;
-
-        return {
-          id: message.id,
-          chatId: message.chatId,
-          role: message.role,
-          status: message.status,
-          sequence: message.sequence,
-          content: message.content,
-          errorCode: message.errorCode,
-          errorMessage: message.errorMessage,
-          visuals:
-            message.role === "assistant"
-              ? readAnswerVisuals(message.metadata)
-              : undefined,
-          sources:
-            message.role === "assistant"
-              ? readAnswerSources(message.metadata)
-              : undefined,
-          quickQuestionMenu:
-            message.role === "assistant"
-              ? readQuickQuestionMenu(message.metadata)
-              : undefined,
-          truncated: completionStatus?.truncated,
-          maybeTruncated: completionStatus?.maybeTruncated,
-          finishReason: completionStatus?.finishReason,
-          createdAt: message.createdAt.toISOString(),
-          updatedAt: message.updatedAt.toISOString(),
-        };
-      }),
-    };
-
-    return NextResponse.json(response);
+    });
   } catch (error) {
     console.error("Failed to get chat detail", error);
 

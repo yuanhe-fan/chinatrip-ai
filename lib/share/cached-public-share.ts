@@ -9,14 +9,7 @@ import {
 } from "@/lib/cache/redis";
 import { getPublicShareBySlug } from "./public-share";
 
-type CachedPublicShareOptions = {
-  incrementViewCount?: boolean;
-};
-
-export async function getCachedPublicShareBySlug(
-  shareId: string,
-  options: CachedPublicShareOptions = {},
-) {
+export async function getCachedPublicShareBySlug(shareId: string) {
   const cacheKey = createShareCacheKey(shareId);
   const cachedResponse = await safeGetJson<SharedAnswerResponse>(cacheKey);
 
@@ -24,9 +17,7 @@ export async function getCachedPublicShareBySlug(
     return cachedResponse.share;
   }
 
-  const share = await getPublicShareBySlug(shareId, {
-    incrementViewCount: options.incrementViewCount,
-  });
+  const share = await getPublicShareBySlug(shareId);
 
   if (!share) {
     return null;
@@ -47,4 +38,3 @@ export async function getCachedPublicShareBySlug(
 
   return response.share;
 }
-

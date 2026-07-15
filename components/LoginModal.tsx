@@ -105,7 +105,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
 
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-[0_4px_18px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/80">
           <Image
-            src="/logo-img.png"
+            src="/logo-96.webp"
             alt="ChinaTrip AI logo"
             width={58}
             height={58}

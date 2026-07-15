@@ -4,9 +4,9 @@ import { useCallback, useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api/client";
 import { MeResponse } from "@/lib/api/types";
 
-export function useCurrentUser() {
-  const [me, setMe] = useState<MeResponse | null>(null);
-  const [isLoadingUser, setIsLoadingUser] = useState(true);
+export function useCurrentUser(initialMe: MeResponse | null = null) {
+  const [me, setMe] = useState<MeResponse | null>(initialMe);
+  const [isLoadingUser, setIsLoadingUser] = useState(initialMe === null);
 
   async function loadUser() {
     try {
@@ -25,6 +25,10 @@ export function useCurrentUser() {
   }, []);
 
   useEffect(() => {
+    if (initialMe) {
+      return;
+    }
+
     let isMounted = true;
 
     async function loadInitialUser() {
@@ -43,7 +47,7 @@ export function useCurrentUser() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [initialMe]);
 
   return {
     me,

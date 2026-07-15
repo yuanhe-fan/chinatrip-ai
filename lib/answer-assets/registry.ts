@@ -142,7 +142,7 @@ function createPoiAssets(definition: PoiAssetDefinition) {
 
     return {
       id: `poi:${definition.city}:${definition.poiSlug}:${variant}`,
-      src: `/answer-assets/poi/${definition.city}/${definition.poiSlug}/${definition.poiSlug}-${variant}.jpg`,
+      src: `/answer-assets/poi/${definition.city}/${definition.poiSlug}/${definition.poiSlug}-${variant}.webp`,
       title: definition.title,
       alt:
         variant === 1

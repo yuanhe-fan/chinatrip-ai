@@ -205,7 +205,7 @@ export function ShareView({
             aria-label="ChinaTrip AI home"
           >
             <Image
-              src="/logo-img.png"
+              src="/logo-96.webp"
               alt="ChinaTrip AI logo"
               width={40}
               height={40}
@@ -264,7 +264,7 @@ export function ShareView({
               <article className="mt-7 rounded-[1.25rem] rounded-tl-sm border border-[#E6D8C7] bg-white p-5 text-[0.94rem] leading-7 text-[#26384D] shadow-[0_18px_45px_rgba(20,36,58,0.06)] sm:p-7">
                 <div className="flex items-center gap-3 border-b border-[#E6D8C7]/70 pb-4">
                   <Image
-                    src="/logo-img.png"
+                    src="/logo-96.webp"
                     alt="ChinaTrip AI"
                     width={32}
                     height={32}

@@ -1,5 +1,11 @@
-import { HomeView } from "@/features/home/HomeView";
+import { HomeBackground } from "@/components/HomeBackground";
+import { HomePage } from "@/features/home/HomePage";
 
 export default function Home() {
-  return <HomeView />;
+  return (
+    <>
+      <HomeBackground />
+      <HomePage />
+    </>
+  );
 }
