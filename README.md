@@ -1,125 +1,89 @@
 # ChinaTrip AI
 
-ChinaTrip AI is a browser-based AI travel assistant for foreign travelers visiting China.
+ChinaTrip AI is an AI travel guide for international visitors to China. It turns practical travel questions and itinerary requests into clear, actionable answers that can be continued, copied, and shared.
 
-It helps users ask practical questions about China travel, payments, transport, apps, food, local tips, and short itineraries. Answers should be clear, actionable, copyable, and shareable.
+## Product preview
 
-## Current Phase
+### Home
 
-```text
-Phase 5: Dynamic trip clarification release hardening
-```
+![ChinaTrip AI home page](docs/images/home.png)
 
-Phases 1-3 have established:
+### Chat
 
-- Home, chat, share, authentication, and responsive UI flows.
-- AI provider, streaming answer, prompt profile, and usage logging.
-- Structured answer rendering and approved visual assets.
-- RAG knowledge ingestion, pgvector retrieval, and answer sources.
+![ChinaTrip AI chat page with sources, related questions, and answer feedback](docs/images/chat.png)
 
-Phase 4 established:
+## What it does
 
-- AI evaluation Harness.
-- Prompt versioning and answer contracts.
-- AI development rules and project Skills.
+- Answers practical questions about payments, transport, internet access, tickets, food, and local travel tips with a structured streaming response.
+- Uses RAG retrieval and displays the supporting knowledge sources alongside the answer.
+- Detects itinerary-planning requests and asks **0–5** focused Trip setup questions only when they materially improve the plan. It never asks users to choose arrival or departure times.
+- Keeps conversations available for both anonymous visitors and signed-in users; Google sign-in makes chats portable across sessions.
+- Supports copying answers, creating public share pages, and starting a private chat from a shared answer.
+- Adds a one-time 👍 / 👎 quality signal to completed answers. Negative feedback can include an optional reason and comment without requiring sign-in.
+- Generates 1–3 **Explore next** follow-up questions after an answer completes. Selecting one continues the current chat directly and skips Trip setup.
 
-Phase 5 focuses on:
+## Current release
 
-- Dynamic itinerary clarification inside the existing chat flow.
-- Temporary, non-persistent trip context collection before itinerary generation.
-- Context-aware clarification quality, fallback behavior, and UI release hardening.
-
-## MVP Scope
-
-Phase 1 validates the core product loop:
-
-```text
-Home question
-→ AI answer
-→ Follow-up question
-→ Copy or Share answer
-→ New user asks from share page
-```
-
-Phase 1 includes:
-
-- Home page.
-- Classic questions.
-- Chat page.
-- AI answer generation.
-- Follow-up questions.
-- Chat history.
-- New chat.
-- Google login.
-- Share answer.
-- Copy answer.
-- Share page.
-- English / Chinese language switch.
-- Responsive layout.
-- AI usage logs.
-- Vibcoding directory baseline and foundational skills.
-
-Phase 1 does not include:
-
-- Question limits.
-- Credits or payment.
-- Save answer or bookmarks.
-- RAG.
-- Maps.
-- Attraction detail pages.
-- Complex itinerary editor.
-- Native app.
-- Full harness automation.
+The current sixth-phase release builds on the core chat, RAG, AI quality, and dynamic itinerary flows with answer feedback and context-aware related questions. It also includes a performance-focused delivery path: a static home page, server-prefetched chat data where available, optimized image delivery, virtualized long conversations, scoped Redis caching, and server timing instrumentation.
 
 ## Tech Stack
 
-```text
-Next.js
-React
-TypeScript
-Tailwind CSS
-Supabase Auth
-Docker PostgreSQL
-Supabase PostgreSQL
-Prisma
-React Query
-useState / Zustand
-@tanstack/react-virtual
-Doubao LLM
-DeepSeek fallback
-Vercel
-```
+| Area | Technology |
+| --- | --- |
+| Web app | Next.js 16, React 19, TypeScript, Tailwind CSS |
+| Authentication | Supabase Auth with Google OAuth |
+| Data | PostgreSQL + pgvector, Prisma, Supabase |
+| AI | DeepSeek answer generation, Doubao / Volcengine Ark embeddings |
+| Retrieval and cache | RAG knowledge base, Upstash Redis |
+| Client experience | React Query, Zustand, TanStack Virtual |
+| Delivery and quality | Vercel, ESLint, AI evaluation Harness |
 
 ## Local Development
 
-Install dependencies:
+### Prerequisites
+
+- Node.js 22+
+- pnpm 10+
+- Docker Desktop
+- A pgvector-enabled PostgreSQL instance (the included Docker Compose service is ready to use)
+
+### Start the project
 
 ```bash
 pnpm install
-```
-
-Copy environment variables:
-
-```bash
-cp .env.example .env.local
-```
-
-Start local PostgreSQL:
-
-```bash
+cp .env.example .env
 docker compose up -d
-```
-
-Start the Next.js dev server:
-
-```bash
+pnpm prisma:migrate
 pnpm dev
 ```
 
-Open:
+Open [http://localhost:3000](http://localhost:3000).
 
-```text
-http://localhost:3000
+The local Compose service maps PostgreSQL to port **5433**, so the sample `DATABASE_URL` and `DIRECT_URL` already use `localhost:5433`. Add Supabase and AI provider credentials to `.env` when testing authentication, a live model, embeddings, or Redis. `AI_PROVIDER="mock"` is sufficient for UI development and deterministic local screenshots.
+
+If `POST /api/chats` returns `503 DATABASE_UNAVAILABLE`, first run:
+
+```bash
+docker compose ps
+pnpm prisma:migrate
+```
+
+Then verify that the database URLs still point to port `5433`.
+
+## Quality Checks
+
+```bash
+pnpm exec prisma validate
+pnpm lint
+pnpm ai:harness:smoke
+pnpm ai:harness:test
+pnpm build
+```
+
+Use the full AI Harness when changing prompts, contracts, RAG behavior, or itinerary clarification logic:
+
+```bash
+pnpm ai:harness:full
 ```
 
 ## Documentation Index
@@ -131,6 +95,7 @@ Product:
 - [Phase 3 RAG Knowledge Base Product Plan](docs/product/phase-3-rag-knowledge-base.md)
 - [Phase 4 AI Automation Engineering Plan](docs/product/phase-4-ai-automation.md)
 - [Phase 5 Dynamic Trip Clarification Flow](docs/product/phase-5-dynamic-trip-clarification.md)
+- [Phase 6 Answer Feedback and Related Questions](docs/product/phase-6-answer-feedback-related-questions.md)
 - [Copywriting](docs/product/copywriting.md)
 - [User Flows](docs/product/user-flows.md)
 
@@ -159,37 +124,8 @@ AI:
 - [Skills](ai/skills/README.md)
 - [Prompt Versions](ai/prompts/versions/README.md)
 
-## AI Engineering Strategy
+## Development Principles
 
-Phase 4 and Phase 5 sequence:
+Keep product behavior private by default: chats, anonymous sessions, profiles, and feedback are owner-scoped; only explicitly shared answers are public. Treat user text and feedback as product data, not as a source for new prompt or RAG content.
 
-```text
-Harness quality baseline
-→ Prompt versions and answer contracts
-→ AI development rules and Skills
-→ Dynamic trip clarification
-→ Continuous quality feedback loop
-```
-
-Development rule:
-
-```text
-Read product and technical contracts
-→ Read the relevant Skill
-→ Add or update a Harness case
-→ Implement the smallest change
-→ Run evaluation
-→ Update Prompt docs and Skills
-```
-
-## Current Phase 5 Delivery Order
-
-Recommended sequence:
-
-```text
-1. Align Phase 5 product, API, technical, and local-development docs.
-2. Harden dynamic clarification error handling and fallback behavior.
-3. Add targeted itinerary clarification regression tests.
-4. Run itinerary profile Harness and smoke checks.
-5. Complete PC and mobile UI acceptance for the clarification flow.
-```
+When changing AI behavior, update the relevant contract, add or adjust a Harness case, make the smallest safe implementation change, and run the corresponding quality checks.
